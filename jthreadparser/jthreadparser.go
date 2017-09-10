@@ -11,27 +11,29 @@ import (
 
 const (
     threadInformationBegins     = "\""
-    threadNameRgx               = `^\"(.*)\".*prio=(\d)+ tid=(\w*) nid=(\w*)\s\w*`
+    threadNameRgx               = `^\"(.*)\".*prio=([0-9]+) tid=(\w*) nid=(\w*)\s\w*`
     stateRgx                    = `\s+java.lang.Thread.State: (.*)`
     threadNameRgxGroupIndex     = 1
+    threadPriorityRgxGroupIndex = 2
     threadIdRgxGroupIndex       = 3
     threadNativeIdRgxGroupIndex = 4
 )
 
 type ThreadInfo struct {
-    Name, ID, NativeID, State, StackTrace string
+    Name, ID, NativeID, Priority, State, StackTrace string
 }
 
 func (th ThreadInfo) String() string {
-    return fmt.Sprintf("Thread Id: '%s', Name: '%s', NativeID: '%s', State: '%s', StackTrace: \n'%s'",
-        th.ID, th.Name, th.NativeID, th.State, th.StackTrace)
+    return fmt.Sprintf("Thread Id: '%s', Name: '%s', NativeID: '%s', Priority: '%s', State: '%s', StackTrace: \n'%s'",
+        th.ID, th.Name, th.NativeID, th.Priority, th.Priority, th.State, th.StackTrace)
 }
 
 func extractThreadInfoFromLine(line string) ThreadInfo {
     ti := ThreadInfo{}
     if rgxp, _ := regexp.Compile(threadNameRgx); rgxp.MatchString(line) {
         for _, v := range rgxp.FindAllStringSubmatch(line, -1) {
-            ti.Name, ti.ID, ti.NativeID = v[threadNameRgxGroupIndex], v[threadIdRgxGroupIndex], v[threadNativeIdRgxGroupIndex]
+            ti.Name, ti.Priority, ti.ID, ti.NativeID = 
+                v[threadNameRgxGroupIndex], v[threadPriorityRgxGroupIndex], v[threadIdRgxGroupIndex], v[threadNativeIdRgxGroupIndex]
         }
     }
     return ti

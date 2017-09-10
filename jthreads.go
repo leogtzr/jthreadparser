@@ -19,9 +19,10 @@ func main() {
     }
 
     for _, th := range threads {
-        fmt.Println(th.Name)
-        fmt.Println(th.NativeID)
-        fmt.Println(th.State)
+        fmt.Printf("Name '%s'\n", th.Name)
+        fmt.Printf("Priority '%s'\n", th.Priority)
+        fmt.Printf("Native ID '%s'\n", th.NativeID)
+        fmt.Printf("State '%s'\n", th.State)
         fmt.Println(th.StackTrace)
     }
 
