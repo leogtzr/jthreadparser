@@ -13,6 +13,7 @@ const (
     threadInformationBegins     = "\""
     threadNameRgx               = `^\"(.*)\".*prio=([0-9]+) tid=(\w*) nid=(\w*)\s\w*`
     stateRgx                    = `\s+java.lang.Thread.State: (.*)`
+    lockedRgx                   = `\s*\- locked\s*<(.*)>\s*(.*)`
     threadNameRgxGroupIndex     = 1
     threadPriorityRgxGroupIndex = 2
     threadIdRgxGroupIndex       = 3
@@ -84,4 +85,32 @@ func Parse(fileName string) ([]ThreadInfo, error) {
 
     return threads, nil
 
+}
+
+func Holds(threads *[]ThreadInfo) map[string][]string {
+
+    holds := make(map[string][]string)
+
+    for _, th := range *threads {
+        if len(th.StackTrace) == 0 {
+            continue
+        }
+
+        for _, stackLine := range strings.Split(th.StackTrace, "\n") {
+            if strings.Contains(stackLine, "locked") {
+                if rgxp, _ := regexp.Compile(lockedRgx); rgxp.MatchString(stackLine) {
+                    for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
+                        if _, exists := holds[th.ID]; !exists {
+                            holds[th.ID] = make([]string, 0)
+                        }
+                        h := holds[th.ID]
+                        h = append(h, group[1])
+                        holds[th.ID] = h
+                    }
+                }
+            }
+        }
+    }
+    
+    return holds
 }
