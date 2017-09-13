@@ -96,15 +96,11 @@ func Holds(threads *[]ThreadInfo) map[ThreadInfo][]Locked {
     holds := make(map[ThreadInfo][]Locked)
 
     for _, th := range *threads {
-        if len(th.StackTrace) == 0 {
+        if len(th.StackTrace) == 0 || !strings.Contains(th.StackTrace, "locked") {
             continue
         }
 
         for _, stackLine := range strings.Split(th.StackTrace, "\n") {
-            if ! strings.Contains(stackLine, "locked") {
-                continue
-            }
-
             if rgxp, _ := regexp.Compile(lockedRgx); rgxp.MatchString(stackLine) {
                 for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
                     if _, exists := holds[th]; !exists {

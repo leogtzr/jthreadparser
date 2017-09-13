@@ -31,7 +31,7 @@ func main() {
     fmt.Println(len(threads))
 
     for k, v := range jthreadparser.Holds(&threads) {
-        fmt.Printf("[%s] => %v\n", k, v)
+        fmt.Printf("[%s] => %s\n", k, v)
     }
 
 }
