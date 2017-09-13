@@ -30,7 +30,7 @@ type Locked struct {
 
 func (th ThreadInfo) String() string {
     return fmt.Sprintf("Thread Id: '%s', Name: '%s', NativeID: '%s', Priority: '%s', State: '%s', StackTrace: \n'%s'",
-        th.ID, th.Name, th.NativeID, th.Priority, th.Priority, th.State, th.StackTrace)
+        th.ID, th.Name, th.NativeID, th.Priority, th.State, th.StackTrace)
 }
 
 func extractThreadInfoFromLine(line string) ThreadInfo {
