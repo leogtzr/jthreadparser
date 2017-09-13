@@ -23,15 +23,15 @@ func main() {
         /*
         fmt.Printf("Priority '%s'\n", th.Priority)
         fmt.Printf("Native ID '%s'\n", th.NativeID)
-        fmt.Printf("State '%s'\n", th.State)*/
-        // fmt.Println(th.StackTrace)
+        fmt.Printf("State '%s'\n", th.State)
+        fmt.Println(th.StackTrace)
+        */
     }
 
     fmt.Println(len(threads))
 
-    // fmt.Println(jthreadparser.Holds(&threads))
     for k, v := range jthreadparser.Holds(&threads) {
-        fmt.Printf("[%s] => [%s]\n", k, v)
+        fmt.Printf("[%s] => %v\n", k, v)
     }
 
 }

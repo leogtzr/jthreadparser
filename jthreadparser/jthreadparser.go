@@ -13,7 +13,7 @@ const (
     threadInformationBegins     = "\""
     threadNameRgx               = `^\"(.*)\".*prio=([0-9]+) tid=(\w*) nid=(\w*)\s\w*`
     stateRgx                    = `\s+java.lang.Thread.State: (.*)`
-    lockedRgx                   = `\s*\- locked\s*<(.*)>\s*(.*)`
+    lockedRgx                   = `\s*\- locked\s*<(.*)>\s*\(a\s(.*)\)`
     threadNameRgxGroupIndex     = 1
     threadPriorityRgxGroupIndex = 2
     threadIdRgxGroupIndex       = 3
@@ -22,6 +22,10 @@ const (
 
 type ThreadInfo struct {
     Name, ID, NativeID, Priority, State, StackTrace string
+}
+
+type Locked struct {
+    LockID, LockecObjectName string
 }
 
 func (th ThreadInfo) String() string {
@@ -87,9 +91,9 @@ func Parse(fileName string) ([]ThreadInfo, error) {
 
 }
 
-func Holds(threads *[]ThreadInfo) map[string][]string {
+func Holds(threads *[]ThreadInfo) map[ThreadInfo][]Locked {
 
-    holds := make(map[string][]string)
+    holds := make(map[ThreadInfo][]Locked)
 
     for _, th := range *threads {
         if len(th.StackTrace) == 0 {
@@ -97,16 +101,18 @@ func Holds(threads *[]ThreadInfo) map[string][]string {
         }
 
         for _, stackLine := range strings.Split(th.StackTrace, "\n") {
-            if strings.Contains(stackLine, "locked") {
-                if rgxp, _ := regexp.Compile(lockedRgx); rgxp.MatchString(stackLine) {
-                    for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
-                        if _, exists := holds[th.ID]; !exists {
-                            holds[th.ID] = make([]string, 0)
-                        }
-                        h := holds[th.ID]
-                        h = append(h, group[1])
-                        holds[th.ID] = h
+            if ! strings.Contains(stackLine, "locked") {
+                continue
+            }
+
+            if rgxp, _ := regexp.Compile(lockedRgx); rgxp.MatchString(stackLine) {
+                for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
+                    if _, exists := holds[th]; !exists {
+                        holds[th] = make([]Locked, 0)
                     }
+                    h := holds[th]
+                    h = append(h, Locked{group[1], group[2]})
+                    holds[th] = h
                 }
             }
         }
