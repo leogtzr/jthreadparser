@@ -14,6 +14,7 @@ const (
     threadNameRgx               = `^\"(.*)\".*prio=([0-9]+) tid=(\w*) nid=(\w*)\s\w*`
     stateRgx                    = `\s+java.lang.Thread.State: (.*)`
     lockedRgx                   = `\s*\- locked\s*<(.*)>\s*\(a\s(.*)\)`
+    awaitingNotificationRgx      = `\s*\- waiting on\s*<(.*)>\s*\(a\s(.*)\)`
     threadNameRgxGroupIndex     = 1
     threadPriorityRgxGroupIndex = 2
     threadIdRgxGroupIndex       = 3
@@ -29,8 +30,7 @@ type Locked struct {
 }
 
 func (th ThreadInfo) String() string {
-    return fmt.Sprintf("Thread Id: '%s', Name: '%s', NativeID: '%s', Priority: '%s', State: '%s', StackTrace: \n'%s'",
-        th.ID, th.Name, th.NativeID, th.Priority, th.State, th.StackTrace)
+    return fmt.Sprintf("Thread Id: '%s', Name: '%s', State: '%s'", th.ID, th.Name, th.State)
 }
 
 func extractThreadInfoFromLine(line string) ThreadInfo {
@@ -115,4 +115,32 @@ func Holds(threads *[]ThreadInfo) map[ThreadInfo][]Locked {
     }
     
     return holds
+}
+
+func AwaitingNotification(threads *[]ThreadInfo) map[Locked][]ThreadInfo {
+    threadsWaiting := make(map[Locked][]ThreadInfo)
+
+    for _, th := range *threads {
+        if len(th.StackTrace) == 0 || !strings.Contains(th.StackTrace, "waiting on") {
+            continue
+        }
+
+        for _, stackLine := range strings.Split(th.StackTrace, "\n") {
+            if rgxp, _ := regexp.Compile(lockedRgx); rgxp.MatchString(stackLine) {
+                for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
+                    k := Locked{group[1], group[2]}
+                    if _, exists := threadsWaiting[k]; !exists {
+                        threadsWaiting[k] = make([]ThreadInfo, 0)
+                    }
+                    h := threadsWaiting[k]
+                    h = append(h, th)
+                    threadsWaiting[k] = h
+                }
+            }
+        }
+
+    }
+
+    return threadsWaiting
+
 }
