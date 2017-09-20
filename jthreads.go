@@ -28,19 +28,21 @@ func main() {
         */
     }
 
-    fmt.Println(len(threads))
+    
+    /*fmt.Println(len(threads))
     for k, v := range jthreadparser.Holds(&threads) {
         fmt.Printf("[%s] => %s\n", k, v)
-    }
+    }*/
 
-    /*
+    fmt.Println("####")
+
     for k, v := range jthreadparser.AwaitingNotification(&threads) {
-        fmt.Printf("[%s]\n", k)
+       /* fmt.Printf("[%s]\n", k)
         for _, waiting := range v {
             fmt.Println(waiting)
-        }
-        fmt.Println("~~~~~~~~~~~~~~~~~~~~~")
-    }*/
+        }*/
+        fmt.Printf("[%s] => %s\n", k, v)
+    }
 
 }
 
