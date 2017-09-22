@@ -14,8 +14,7 @@ const (
     threadNameRgx                   = `^\"(.*)\".*prio=([0-9]+) tid=(\w*) nid=(\w*)\s\w*`
     stateRgx                        = `\s+java.lang.Thread.State: (.*)`
     lockedRgx                       = `\s*\- locked\s*<(.*)>\s*\(a\s(.*)\)`
-    awaitingNotificationRgx         = `\s*\- waiting on\s*<(.*)>\s*\(a\s(.*)\)`
-    parkingWaitingNotificationRgx   = `\s*\- parking to wait for\s*<(.*)>\s*\(a\s(.*)\)`
+    parkingOrWaitingRgx             = `\s*\- (?:waiting on|parking to wait for)\s*<(.*)>\s*\(a\s(.*)\)`
     threadNameRgxGroupIndex         = 1
     threadPriorityRgxGroupIndex     = 2
     threadIdRgxGroupIndex           = 3
@@ -127,9 +126,7 @@ func AwaitingNotification(threads *[]ThreadInfo) map[Locked][]ThreadInfo {
         }
 
         for _, stackLine := range strings.Split(th.StackTrace, "\n") {
-            if rgxp, _ := regexp.Compile(parkingWaitingNotificationRgx); rgxp.MatchString(stackLine) {
-                threadsWaiting = extractThreadWaiting(threadsWaiting, rgxp, stackLine, &th)
-            } else if rgxp, _ := regexp.Compile(awaitingNotificationRgx); rgxp.MatchString(stackLine) {
+            if rgxp, _ := regexp.Compile(parkingOrWaitingRgx); rgxp.MatchString(stackLine) {
                 threadsWaiting = extractThreadWaiting(threadsWaiting, rgxp, stackLine, &th)
             }
         }
