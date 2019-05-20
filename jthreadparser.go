@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -15,6 +16,7 @@ const (
 	stateRgx                    = `\s+java.lang.Thread.State: (.*)`
 	lockedRgx                   = `\s*\- locked\s*<(.*)>\s*\(a\s(.*)\)`
 	parkingOrWaitingRgx         = `\s*\- (?:waiting on|parking to wait for)\s*<(.*)>\s*\(a\s(.*)\)`
+	stackTraceRgx               = `^\s+(at|\-\s).*\)$`
 	threadNameRgxGroupIndex     = 1
 	threadPriorityRgxGroupIndex = 2
 	threadIDRgxGroupIndex       = 3
@@ -67,16 +69,22 @@ func extractThreadStackTrace(scanner *bufio.Scanner) string {
 	return buffer.String()
 }
 
-func Parse(fileName string) ([]ThreadInfo, error) {
+// ParseFromFile ...
+func ParseFromFile(fileName string) ([]ThreadInfo, error) {
 
-	file, err := os.Open(os.Args[1])
+	file, err := os.Open(fileName)
 	if err != nil {
 		return nil, err
 	}
 
-	threads := make([]ThreadInfo, 0, 0)
+	threads := make([]ThreadInfo, 0)
+	parse(file, &threads)
 
-	scanner := bufio.NewScanner(file)
+	return threads, nil
+}
+
+func parse(r io.Reader, threads *[]ThreadInfo) {
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 
 		if strings.HasPrefix(scanner.Text(), threadInformationBegins) {
@@ -84,15 +92,20 @@ func Parse(fileName string) ([]ThreadInfo, error) {
 			scanner.Scan()
 			ti.State = extractThreadState(scanner.Text())
 			ti.StackTrace = extractThreadStackTrace(scanner)
-			threads = append(threads, ti)
+			*threads = append(*threads, ti)
 		}
 
 	}
-
-	return threads, nil
-
 }
 
+// ParseFrom ...
+func ParseFrom(r io.Reader) ([]ThreadInfo, error) {
+	threads := make([]ThreadInfo, 0)
+	parse(r, &threads)
+	return threads, nil
+}
+
+// Holds ...
 func Holds(threads *[]ThreadInfo) map[ThreadInfo][]Locked {
 
 	holds := make(map[ThreadInfo][]Locked)
@@ -119,6 +132,7 @@ func Holds(threads *[]ThreadInfo) map[ThreadInfo][]Locked {
 	return holds
 }
 
+// AwaitingNotification ...
 func AwaitingNotification(threads *[]ThreadInfo) map[Locked][]ThreadInfo {
 	threadsWaiting := make(map[Locked][]ThreadInfo)
 

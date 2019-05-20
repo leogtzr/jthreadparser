@@ -1,6 +1,9 @@
 package jthreadparser
 
 import (
+	"bufio"
+	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -41,5 +44,7 @@ func TestExtractThreadState(t *testing.T) {
 }
 
 func TestExtractThreadDump(t *testing.T) {
-
+	r := strings.NewReader(threadInformation)
+	scanner := bufio.NewScanner(r)
+	fmt.Println(scanner)
 }
