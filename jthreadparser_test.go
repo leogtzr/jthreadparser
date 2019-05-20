@@ -1,7 +1,6 @@
 package jthreadparser
 
 import (
-	"bufio"
 	"fmt"
 	"strings"
 	"testing"
@@ -19,7 +18,13 @@ const (
 
    Locked ownable synchronizers:
 	- <0x00000007500b7250> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
-    `
+	`
+
+	daemonThreadInformation = `"Attach Listener" #6085 daemon prio=9 os_prio=0 tid=0x00007f90d0106000 nid=0x18a1 runnable [0x0000000000000000]
+	java.lang.Thread.State: RUNNABLE
+ 
+	Locked ownable synchronizers:
+	 - None`
 )
 
 func TestThreadInfo(t *testing.T) {
@@ -43,8 +48,25 @@ func TestExtractThreadState(t *testing.T) {
 	}
 }
 
-func TestExtractThreadDump(t *testing.T) {
-	r := strings.NewReader(threadInformation)
-	scanner := bufio.NewScanner(r)
-	fmt.Println(scanner)
+func TestShouldIdentifyDaemonThread(t *testing.T) {
+	threads, err := ParseFrom(strings.NewReader(daemonThreadInformation))
+	if err != nil {
+		t.Error("Error parsing daemon thread")
+	}
+	if len(threads) != 1 {
+		t.Error("Error parsing single daemon thread dump")
+	}
+	if !threads[0].Daemon {
+		t.Error("Thread should be daemon")
+	}
+	fmt.Println(threads[0])
+}
+
+func TestShouldTagCorrectlyDaemonThread(t *testing.T) {
+	expectedThreadStringInfo := "Thread Id: '0x00007f90d0106000' (daemon), Name: 'Attach Listener', State: 'RUNNABLE'"
+
+	th := ThreadInfo{ID: "0x00007f90d0106000", Name: "Attach Listener", State: "RUNNABLE", Daemon: true}
+	if th.String() != expectedThreadStringInfo {
+		t.Errorf("got=[%s], expected=[%s]", th.String(), expectedThreadStringInfo)
+	}
 }

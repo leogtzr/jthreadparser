@@ -26,6 +26,7 @@ const (
 // ThreadInfo ...
 type ThreadInfo struct {
 	Name, ID, NativeID, Priority, State, StackTrace string
+	Daemon                                          bool
 }
 
 // Locked ...
@@ -34,12 +35,18 @@ type Locked struct {
 }
 
 func (th ThreadInfo) String() string {
+	if th.Daemon {
+		return fmt.Sprintf("Thread Id: '%s' (daemon), Name: '%s', State: '%s'", th.ID, th.Name, th.State)
+	}
 	return fmt.Sprintf("Thread Id: '%s', Name: '%s', State: '%s'", th.ID, th.Name, th.State)
 }
 
 func extractThreadInfoFromLine(line string) ThreadInfo {
 	ti := ThreadInfo{}
 	if rgxp, _ := regexp.Compile(threadNameRgx); rgxp.MatchString(line) {
+		if strings.Contains(line, " daemon ") {
+			ti.Daemon = true
+		}
 		for _, v := range rgxp.FindAllStringSubmatch(line, -1) {
 			ti.Name, ti.Priority, ti.ID, ti.NativeID =
 				v[threadNameRgxGroupIndex], v[threadPriorityRgxGroupIndex], v[threadIDRgxGroupIndex], v[threadNativeIDRgxGroupIndex]
