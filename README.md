@@ -1,5 +1,5 @@
 ```go
-threads, err := jthreadparser.Parse(os.Args[1])
+threads, err := jthreadparser.ParseFromFile(os.Args[1])
 if err != nil {
     log.Fatal(err)
 }
