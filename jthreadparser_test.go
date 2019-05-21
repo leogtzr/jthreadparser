@@ -68,3 +68,60 @@ func TestShouldTagCorrectlyDaemonThread(t *testing.T) {
 		t.Errorf("got=[%s], expected=[%s]", th.String(), expectedThreadStringInfo)
 	}
 }
+
+func TestHolds(t *testing.T) {
+	const threadInfo = `"default task-23" #349 prio=5 os_prio=0 tid=0x00007f8fe400c800 nid=0x72fa waiting for monitor entry [0x00007f8f7228e000]
+	java.lang.Thread.State: BLOCKED (on object monitor)
+	 at java.security.Provider.getService(Provider.java:1039)
+	 - locked <0x0000000682e5f948> (a sun.security.provider.Sun)
+	 at sun.security.jca.ProviderList.getService(ProviderList.java:332)
+	 at sun.security.jca.GetInstance.getInstance(GetInstance.java:157)
+	 at java.security.Security.getImpl(Security.java:695)
+	 at java.security.MessageDigest.getInstance(MessageDigest.java:167)
+	 at sun.security.rsa.RSASignature.<init>(RSASignature.java:79)
+	 at sun.security.rsa.RSASignature$SHA512withRSA.<init>(RSASignature.java:305)
+	 at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	 at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
+	 at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	 at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	 at java.security.Provider$Service.newInstance(Provider.java:1595)
+	 at java.security.Signature$Delegate.newInstance(Signature.java:1020)
+	 at java.security.Signature$Delegate.chooseProvider(Signature.java:1114)
+	 - locked <0x00000007bc531138> (a java.lang.Object)
+	 at java.security.Signature$Delegate.engineInitSign(Signature.java:1188)
+	 at java.security.Signature.initSign(Signature.java:553)
+	 at sun.security.ssl.HandshakeMessage$ECDH_ServerKeyExchange.<init>(HandshakeMessage.java:1031)
+	 at sun.security.ssl.ServerHandshaker.clientHello(ServerHandshaker.java:971)
+	 at sun.security.ssl.ServerHandshaker.processMessage(ServerHandshaker.java:228)
+	 at sun.security.ssl.Handshaker.processLoop(Handshaker.java:1052)
+	 at sun.security.ssl.Handshaker$1.run(Handshaker.java:992)
+	 at sun.security.ssl.Handshaker$1.run(Handshaker.java:989)
+	 at java.security.AccessController.doPrivileged(Native Method)
+	 at sun.security.ssl.Handshaker$DelegatedTask.run(Handshaker.java:1467)
+	 - locked <0x00000007bbbac500> (a sun.security.ssl.SSLEngineImpl)
+	 at io.undertow.protocols.ssl.SslConduit$5.run(SslConduit.java:1021)
+	 at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	 at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	 at java.lang.Thread.run(Thread.java:748)
+ 
+	Locked ownable synchronizers:
+	 - <0x00000006a43d5c08> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+ `
+	expectedNumberOfThreads := 1
+	expectedNumberOfLocksInThread := 3
+
+	threads, err := ParseFrom(strings.NewReader(threadInfo))
+	if err != nil {
+		t.Error("Error parsing thread information.")
+	}
+	holds := Holds(&threads)
+	if len(holds) != expectedNumberOfThreads {
+		t.Errorf("got=[%d], expected=[%d] for holds map length.", len(holds), expectedNumberOfThreads)
+	}
+	for _, lockInfo := range holds {
+		if len(lockInfo) != expectedNumberOfLocksInThread {
+			t.Errorf("It should have identified %d, got=%d", expectedNumberOfThreads, len(lockInfo))
+		}
+	}
+
+}
