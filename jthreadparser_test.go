@@ -1,7 +1,6 @@
 package jthreadparser
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -59,7 +58,6 @@ func TestShouldIdentifyDaemonThread(t *testing.T) {
 	if !threads[0].Daemon {
 		t.Error("Thread should be daemon")
 	}
-	fmt.Println(threads[0])
 }
 
 func TestShouldTagCorrectlyDaemonThread(t *testing.T) {

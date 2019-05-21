@@ -98,6 +98,7 @@ func parse(r io.Reader, threads *[]ThreadInfo) {
 			ti := extractThreadInfoFromLine(scanner.Text())
 			scanner.Scan()
 			ti.State = extractThreadState(scanner.Text())
+			scanner.Scan()
 			ti.StackTrace = extractThreadStackTrace(scanner)
 			*threads = append(*threads, ti)
 		}
