@@ -140,6 +140,26 @@ func Holds(threads *[]ThreadInfo) map[ThreadInfo][]Locked {
 	return holds
 }
 
+// HoldsForThread ...
+func HoldsForThread(th *ThreadInfo) []Locked {
+	holds := make([]Locked, 0)
+
+	if len(th.StackTrace) == 0 || !strings.Contains(th.StackTrace, "locked") {
+		return []Locked{}
+	}
+
+	for _, stackLine := range strings.Split(th.StackTrace, "\n") {
+		if rgxp, _ := regexp.Compile(lockedRgx); rgxp.MatchString(stackLine) {
+			for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
+				lock := Locked{group[1], group[2]}
+				holds = append(holds, lock)
+			}
+		}
+	}
+
+	return holds
+}
+
 // AwaitingNotification ...
 func AwaitingNotification(threads *[]ThreadInfo) map[Locked][]ThreadInfo {
 	threadsWaiting := make(map[Locked][]ThreadInfo)
