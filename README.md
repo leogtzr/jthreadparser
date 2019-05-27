@@ -13,3 +13,18 @@ for _, th := range threads {
     fmt.Println(th.StackTrace)
 }
 ```
+
+### Synchronizers
+
+To get information about which threads are waiting on what you can use the AwaitingNotification() method:
+
+```go
+threadsWaiting := jthreadparser.AwaitingNotification(&threads)
+for k, v := range threadsWaiting {
+    fmt.Println(k.LockID, len(v))
+    for _, threadWaiting := range v {
+        fmt.Println("\t", threadWaiting.Name)
+    }
+    fmt.Println()
+}
+```
