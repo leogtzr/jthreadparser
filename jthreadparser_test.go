@@ -1,6 +1,8 @@
 package jthreadparser
 
 import (
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 )
@@ -62,6 +64,36 @@ const (
 	Locked ownable synchronizers:
 	 - <0x00000006a43d5c08> (a java.util.concurrent.ThreadPoolExecutor$Worker)
  `
+	threadDumpSample = `2017-06-02 19:02:52
+Full thread dump Java HotSpot(TM) 64-Bit Server VM (20.141-b32 mixed mode):
+
+"Attach Listener" daemon prio=10 tid=0x00002aaab74c5000 nid=0x2ea5 waiting on condition [0x0000000000000000]
+	java.lang.Thread.State: RUNNABLE
+
+	Locked ownable synchronizers:
+	- None
+
+"RMI TCP Connection(idle)" daemon prio=10 tid=0x00002aaac69b1800 nid=0x2dec waiting on condition [0x0000000051388000]
+	java.lang.Thread.State: TIMED_WAITING (parking)
+	at sun.misc.Unsafe.park(Native Method)
+	- parking to wait for  <0x0000000740c99708> (a java.util.concurrent.SynchronousQueue$TransferStack)
+	at java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:196)
+	at java.util.concurrent.SynchronousQueue$TransferStack.awaitFulfill(SynchronousQueue.java:424)
+	at java.lang.Thread.run(Thread.java:682)
+
+	Locked ownable synchronizers:
+	- None
+
+"RMI TCP Connection(idle)" daemon prio=10 tid=0x00002aaad5029000 nid=0x2bf8 waiting on condition [0x0000000051287000]
+	java.lang.Thread.State: TIMED_WAITING (parking)
+	at sun.misc.Unsafe.park(Native Method)
+	- parking to wait for  <0x0000000740c99708> (a java.util.concurrent.SynchronousQueue$TransferStack)
+	at java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:196)
+	at java.util.concurrent.SynchronousQueue$TransferStack.awaitFulfill(SynchronousQueue.java:424)
+	at java.lang.Thread.run(Thread.java:682)
+
+	Locked ownable synchronizers:
+	- None`
 )
 
 func TestThreadInfo(t *testing.T) {
@@ -144,5 +176,31 @@ func TestHoldsForThread(t *testing.T) {
 		if len(holds) != expectedNumberOfLocksInThreadWithLockInfo {
 			t.Errorf("expected=[%d], got=[%d]", expectedNumberOfLocksInThreadWithLockInfo, len(holds))
 		}
+	}
+}
+
+// func ParseFromFile(fileName string) ([]ThreadInfo, error) {
+func TestParseFromFile(t *testing.T) {
+	file, err := ioutil.TempFile("", "xxxx.")
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.Remove(file.Name())
+
+	err = ioutil.WriteFile(file.Name(), []byte(threadDumpSample), 0644)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectedNumberOfThreadsInSample := 3
+	threads, err := ParseFromFile(file.Name())
+
+	if len(threads) != expectedNumberOfThreadsInSample {
+		t.Errorf("got=[%d], expected=[%d]", len(threads), expectedNumberOfThreadsInSample)
+	}
+
+	threads, err = ParseFromFile("does_not_exist...")
+	if threads != nil {
+		t.Errorf("got=[%q], expected a nil reference", threads)
 	}
 }
