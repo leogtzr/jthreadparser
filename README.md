@@ -21,7 +21,7 @@ To get information about which threads are waiting on what you can use the Await
 ```go
 threadsWaiting := jthreadparser.AwaitingNotification(&threads)
 for k, v := range threadsWaiting {
-    fmt.Println(k.LockID, len(v))
+    fmt.Printf("%d threads waiting for notification on lock %s\n", len(v), k.LockID)
     for _, threadWaiting := range v {
         fmt.Println("\t", threadWaiting.Name)
     }
