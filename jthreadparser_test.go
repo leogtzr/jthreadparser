@@ -105,6 +105,12 @@ func TestShouldTagCorrectlyDaemonThread(t *testing.T) {
 	if th.String() != expectedThreadStringInfo {
 		t.Errorf("got=[%s], expected=[%s]", th.String(), expectedThreadStringInfo)
 	}
+
+	th.Daemon = false
+	expectedThreadStringInfo = "Thread Id: '0x00007f90d0106000', Name: 'Attach Listener', State: 'RUNNABLE'"
+	if th.String() != expectedThreadStringInfo {
+		t.Errorf("got=[%s], expected=[%s]", th.String(), expectedThreadStringInfo)
+	}
 }
 
 func TestHolds(t *testing.T) {
