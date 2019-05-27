@@ -179,7 +179,6 @@ func TestHoldsForThread(t *testing.T) {
 	}
 }
 
-// func ParseFromFile(fileName string) ([]ThreadInfo, error) {
 func TestParseFromFile(t *testing.T) {
 	file, err := ioutil.TempFile("", "xxxx.")
 	if err != nil {
