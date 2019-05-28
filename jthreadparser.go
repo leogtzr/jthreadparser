@@ -179,6 +179,38 @@ func AwaitingNotification(threads *[]ThreadInfo) map[Locked][]ThreadInfo {
 	return threadsWaiting
 }
 
+func uniqueStackTrace(threadStackTrace []string) []string {
+	u := make([]string, 0, len(threadStackTrace))
+	m := make(map[string]bool)
+
+	for _, val := range threadStackTrace {
+		if _, ok := m[val]; !ok {
+			m[val] = true
+			u = append(u, val)
+		}
+	}
+
+	return u
+}
+
+func MostUsedMethods(threads *[]ThreadInfo) map[string]int {
+
+	mostUsedMethodsGeneral := make(map[string]int)
+	for _, th := range *threads {
+		stackTraceLines := uniqueStackTrace(strings.Split(th.StackTrace, "\n"))
+		for _, stackTraceLine := range stackTraceLines {
+			if _, ok := mostUsedMethodsGeneral[stackTraceLine]; ok {
+				mostUsedMethodsGeneral[stackTraceLine] = mostUsedMethodsGeneral[stackTraceLine] + 1
+			} else {
+				mostUsedMethodsGeneral[stackTraceLine] = 1
+			}
+		}
+
+	}
+
+	return mostUsedMethodsGeneral
+}
+
 func extractThreadWaiting(
 	threadsWaiting map[Locked][]ThreadInfo,
 	rgxp *regexp.Regexp, stackLine string,

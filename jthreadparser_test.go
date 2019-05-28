@@ -203,3 +203,16 @@ func TestParseFromFile(t *testing.T) {
 		t.Errorf("got=[%q], expected a nil reference", threads)
 	}
 }
+
+func TestTopMethodsInThreads(t *testing.T) {
+	threads, err := ParseFromFile("tdump.sample")
+	if err != nil {
+		t.Error("Unable to parse thread dump sample file")
+	}
+
+	mostUsedMethods := MostUsedMethods(&threads)
+	if mostUsedMethods["at java.lang.Object.wait(Native Method)"] != 82 {
+		t.Errorf("Should have identified 82 threads, got=%d", mostUsedMethods["java.lang.Object.wait(Native Method)"])
+	}
+
+}
