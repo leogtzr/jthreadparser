@@ -177,6 +177,21 @@ func TestHoldsForThread(t *testing.T) {
 			t.Errorf("expected=[%d], got=[%d]", expectedNumberOfLocksInThreadWithLockInfo, len(holds))
 		}
 	}
+
+	// Test now with a thread having a stacktrace without locking/hold information
+	// It should return an empty slice.
+	threads, err = ParseFrom(strings.NewReader(threadInformation))
+	if err != nil {
+		t.Error("Error parsing thread information.")
+	}
+
+	for _, thread := range threads {
+		holds := HoldsForThread(&thread)
+		if len(holds) != 0 {
+			t.Errorf("Should be empty")
+		}
+	}
+
 }
 
 func TestParseFromFile(t *testing.T) {

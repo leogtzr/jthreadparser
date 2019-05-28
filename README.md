@@ -54,3 +54,15 @@ Output:
 ...
 ```
 
+### Threads with same stacktrace
+
+```go
+threads, err := jthreadparser.ParseFromFile("thread_dump.txt")
+...
+indenticalStackTrace := jthreadparser.IdenticalStackTrace(&threads)
+
+for stackTrace, threadCount := range indenticalStackTrace {
+    fmt.Printf("%d threads having this stacktrace: \n", threadCount)
+    fmt.Println(stackTrace)
+}
+```

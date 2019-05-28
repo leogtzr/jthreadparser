@@ -214,7 +214,7 @@ func MostUsedMethods(threads *[]ThreadInfo) map[string]int {
 				continue
 			}
 			if _, ok := mostUsedMethodsGeneral[stackTraceLine]; ok {
-				mostUsedMethodsGeneral[stackTraceLine] = mostUsedMethodsGeneral[stackTraceLine] + 1
+				mostUsedMethodsGeneral[stackTraceLine]++
 			} else {
 				mostUsedMethodsGeneral[stackTraceLine] = 1
 			}
@@ -230,7 +230,6 @@ func IdenticalStackTrace(threads *[]ThreadInfo) map[string]int {
 	indenticalStackTrace := make(map[string]int)
 	for _, th := range *threads {
 		thStack := strings.TrimSpace(th.StackTrace)
-		// thStack := th.StackTrace
 		if _, ok := indenticalStackTrace[thStack]; ok {
 			indenticalStackTrace[thStack]++
 		} else {
