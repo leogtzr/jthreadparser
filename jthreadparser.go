@@ -210,6 +210,9 @@ func MostUsedMethods(threads *[]ThreadInfo) map[string]int {
 		stackTraceLines := uniqueStackTrace(strings.Split(th.StackTrace, "\n"))
 		for _, stackTraceLine := range stackTraceLines {
 			stackTraceLine = extractJavaMethodNameFromStackTraceLine(stackTraceLine)
+			if stackTraceLine == "" {
+				continue
+			}
 			if _, ok := mostUsedMethodsGeneral[stackTraceLine]; ok {
 				mostUsedMethodsGeneral[stackTraceLine] = mostUsedMethodsGeneral[stackTraceLine] + 1
 			} else {
