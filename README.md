@@ -1,4 +1,6 @@
 ```go
+
+# General usage
 threads, err := jthreadparser.ParseFromFile(os.Args[1])
 
 if err != nil {
@@ -29,7 +31,7 @@ for k, v := range threadsWaiting {
 }
 ```
 
-## Most Used Methods
+### Most Used Methods
 
 You can check how many threads include a specific Method using the MostUsedMethods() function:
 
@@ -51,3 +53,4 @@ Output:
 59 thread(s) having 'java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)'
 ...
 ```
+
