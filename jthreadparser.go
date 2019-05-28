@@ -225,6 +225,21 @@ func MostUsedMethods(threads *[]ThreadInfo) map[string]int {
 	return mostUsedMethodsGeneral
 }
 
+// IdenticalStackTrace ...
+func IdenticalStackTrace(threads *[]ThreadInfo) map[string]int {
+	indenticalStackTrace := make(map[string]int)
+	for _, th := range *threads {
+		thStack := strings.TrimSpace(th.StackTrace)
+		// thStack := th.StackTrace
+		if _, ok := indenticalStackTrace[thStack]; ok {
+			indenticalStackTrace[thStack]++
+		} else {
+			indenticalStackTrace[thStack] = 1
+		}
+	}
+	return indenticalStackTrace
+}
+
 func extractThreadWaiting(
 	threadsWaiting map[Locked][]ThreadInfo,
 	rgxp *regexp.Regexp, stackLine string,
