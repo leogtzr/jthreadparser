@@ -66,3 +66,28 @@ for stackTrace, threadCount := range indenticalStackTrace {
     fmt.Println(stackTrace)
 }
 ```
+
+Output:
+```
+...
+20 threads having this stacktrace: 
+at sun.misc.Unsafe.park(Native Method)
+- parking to wait for  <0x000000074efc2310> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+at java.util.concurrent.locks.LockSupport.park(LockSupport.java:156)
+at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1987)
+at java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:399)
+at java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:957)
+at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:917)
+at java.lang.Thread.run(Thread.java:682)
+1 threads having this stacktrace: 
+at java.lang.Object.wait(Native Method)
+- waiting on <0x000000075c8e5d40> (a atg.service.datacollection.DataCollectorQueue)
+at java.lang.Object.wait(Object.java:485)
+at atg.service.queue.EventQueue.getElement(EventQueue.java:236)
+- locked <0x000000075c8e5d40> (a atg.service.datacollection.DataCollectorQueue)
+at atg.service.queue.EventQueue.dispatchQueueElements(EventQueue.java:285)
+at atg.service.queue.EventQueue$Handler.run(EventQueue.java:91)
+1 threads having this stacktrace: 
+at java.lang.Object.wait(Native Method)
+...
+```
