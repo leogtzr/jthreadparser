@@ -17,6 +17,7 @@ const (
 	lockedRgx                   = `\s*\- locked\s*<(.*)>\s*\(a\s(.*)\)`
 	parkingOrWaitingRgx         = `\s*\- (?:waiting on|parking to wait for)\s*<(.*)>\s*\(a\s(.*)\)`
 	stackTraceRgx               = `^\s+(at|\-\s).*\)$`
+	stackTraceRgxMethodName     = `at\s+(.*)$`
 	threadNameRgxGroupIndex     = 1
 	threadPriorityRgxGroupIndex = 2
 	threadIDRgxGroupIndex       = 3
@@ -193,12 +194,22 @@ func uniqueStackTrace(threadStackTrace []string) []string {
 	return u
 }
 
+func extractJavaMethodNameFromStackTraceLine(stacktraceLine string) string {
+	if rgxp, _ := regexp.Compile(stackTraceRgxMethodName); rgxp.MatchString(stacktraceLine) {
+		fields := strings.Fields(strings.TrimSpace(stacktraceLine))
+		return strings.Join(fields[1:], " ")
+	}
+	return ""
+}
+
+// MostUsedMethods ...
 func MostUsedMethods(threads *[]ThreadInfo) map[string]int {
 
 	mostUsedMethodsGeneral := make(map[string]int)
 	for _, th := range *threads {
 		stackTraceLines := uniqueStackTrace(strings.Split(th.StackTrace, "\n"))
 		for _, stackTraceLine := range stackTraceLines {
+			stackTraceLine = extractJavaMethodNameFromStackTraceLine(stackTraceLine)
 			if _, ok := mostUsedMethodsGeneral[stackTraceLine]; ok {
 				mostUsedMethodsGeneral[stackTraceLine] = mostUsedMethodsGeneral[stackTraceLine] + 1
 			} else {

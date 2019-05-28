@@ -211,8 +211,11 @@ func TestTopMethodsInThreads(t *testing.T) {
 	}
 
 	mostUsedMethods := MostUsedMethods(&threads)
-	if mostUsedMethods["at java.lang.Object.wait(Native Method)"] != 82 {
-		t.Errorf("Should have identified 82 threads, got=%d", mostUsedMethods["java.lang.Object.wait(Native Method)"])
-	}
+	javaMethodName := "java.lang.Object.wait(Native Method)"
 
+	expectedNumberOfThreadsWithMethodName := 82
+
+	if mostUsedMethods[javaMethodName] != expectedNumberOfThreadsWithMethodName {
+		t.Errorf("Should have identified %d threads, got=%d", expectedNumberOfThreadsWithMethodName, mostUsedMethods[javaMethodName])
+	}
 }
