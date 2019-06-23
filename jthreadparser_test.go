@@ -178,6 +178,12 @@ func TestHolds(t *testing.T) {
 
 func TestHoldsForThread(t *testing.T) {
 	expectedNumberOfLocksInThreadWithLockInfo := 3
+	expectedLocks := []Locked{
+		Locked{LockID: "0x0000000682e5f948", LockecObjectName: "sun.security.provider.Sun"},
+		Locked{LockID: "0x00000007bc531138", LockecObjectName: "java.lang.Object"},
+		Locked{LockID: "0x00000007bbbac500", LockecObjectName: "sun.security.ssl.SSLEngineImpl"},
+	}
+
 	threads, err := ParseFrom(strings.NewReader(threadInfoWithLocks))
 	if err != nil {
 		t.Error("Error parsing thread information.")
@@ -187,6 +193,12 @@ func TestHoldsForThread(t *testing.T) {
 		if len(holds) != expectedNumberOfLocksInThreadWithLockInfo {
 			t.Errorf("expected=[%d], got=[%d]", expectedNumberOfLocksInThreadWithLockInfo, len(holds))
 		}
+		for i, lock := range holds {
+			if expectedLocks[i] != lock {
+				t.Errorf("got=[%s], expected=[%s]", lock, expectedLocks[i])
+			}
+		}
+
 	}
 
 	// Test now with a thread having a stacktrace without locking/hold information
