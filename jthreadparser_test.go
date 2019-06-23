@@ -149,6 +149,12 @@ func TestHolds(t *testing.T) {
 	expectedNumberOfThreads := 1
 	expectedNumberOfLocksInThread := 3
 
+	expectedLocks := []Locked{
+		Locked{LockID: "0x0000000682e5f948", LockecObjectName: "sun.security.provider.Sun"},
+		Locked{LockID: "0x00000007bc531138", LockecObjectName: "java.lang.Object"},
+		Locked{LockID: "0x00000007bbbac500", LockecObjectName: "sun.security.ssl.SSLEngineImpl"},
+	}
+
 	threads, err := ParseFrom(strings.NewReader(threadInfoWithLocks))
 	if err != nil {
 		t.Error("Error parsing thread information.")
@@ -157,9 +163,14 @@ func TestHolds(t *testing.T) {
 	if len(holds) != expectedNumberOfThreads {
 		t.Errorf("got=[%d], expected=[%d] for holds map length.", len(holds), expectedNumberOfThreads)
 	}
-	for _, lockInfo := range holds {
-		if len(lockInfo) != expectedNumberOfLocksInThread {
-			t.Errorf("It should have identified %d, got=%d", expectedNumberOfThreads, len(lockInfo))
+	for _, locks := range holds {
+		if len(locks) != expectedNumberOfLocksInThread {
+			t.Errorf("It should have identified %d, got=%d", expectedNumberOfThreads, len(locks))
+		}
+		for i, lock := range locks {
+			if expectedLocks[i] != lock {
+				t.Errorf("got=[%s], expected=[%s]", lock, expectedLocks[i])
+			}
 		}
 	}
 
