@@ -24,17 +24,6 @@ const (
 	threadNativeIDRgxGroupIndex = 4
 )
 
-// ThreadInfo ...
-type ThreadInfo struct {
-	Name, ID, NativeID, Priority, State, StackTrace string
-	Daemon                                          bool
-}
-
-// Locked ...
-type Locked struct {
-	LockID, LockecObjectName string
-}
-
 func (th ThreadInfo) String() string {
 	if th.Daemon {
 		return fmt.Sprintf("Thread Id: '%s' (daemon), Name: '%s', State: '%s'", th.ID, th.Name, th.State)
