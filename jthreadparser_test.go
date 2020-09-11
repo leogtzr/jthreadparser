@@ -97,15 +97,75 @@ Full thread dump Java HotSpot(TM) 64-Bit Server VM (20.141-b32 mixed mode):
 )
 
 func TestThreadInfo(t *testing.T) {
-	th := extractThreadInfoFromLine(threadInfo)
-	if th.Name != "Attach Listener" {
-		t.Error("Expected 'Attach Listener, got ", th.Name)
+
+	type testCase struct {
+		threadInfoHeadLine string
+		want               ThreadInfo
 	}
-	if th.ID != "0x00002aaab74c5000" {
-		t.Error("Expected '0x00002aaab74c5000', got ", th.ID)
+
+	tests := []testCase{
+		testCase{
+			threadInfoHeadLine: `"http-nio-8080-BlockPoller" #18 daemon prio=5 os_prio=0 cpu=13.17ms elapsed=116.26s tid=0x00007f4948f82000 nid=0xa35f runnable  [0x00007f48a7dfe000]`,
+			want: ThreadInfo{
+				Daemon:   true,
+				Name:     `http-nio-8080-BlockPoller`,
+				NativeID: "0xa35f",
+				Priority: "5",
+				ID:       "0x00007f4948f82000",
+			},
+		},
+		testCase{
+			threadInfoHeadLine: `"GC Thread#6" os_prio=0 cpu=12.53ms elapsed=106.94s tid=0x00007f1914009000 nid=0xb090 runnable`,
+			want: ThreadInfo{
+				Daemon:   false,
+				Name:     `GC Thread#6`,
+				NativeID: "0xb090",
+				Priority: "",
+				ID:       `0x00007f1914009000`,
+			},
+		},
+		testCase{
+			threadInfoHeadLine: `"GC Thread#0" os_prio=0 cpu=25.37ms elapsed=107.25s tid=0x00007f195c06a800 nid=0xb079 runnable`,
+			want: ThreadInfo{
+				Daemon:   false,
+				Name:     `GC Thread#0`,
+				NativeID: `0xb079`,
+				Priority: "",
+				ID:       `0x00007f195c06a800`,
+			},
+		},
+		testCase{
+			threadInfoHeadLine: `"scheduling-1" #31 prio=5 os_prio=0 cpu=23.59ms elapsed=116.23s tid=0x00007f494899a800 nid=0xa36c waiting on condition  [0x00007f48a70f0000]`,
+			want: ThreadInfo{
+				Daemon:   false,
+				Name:     `scheduling-1`,
+				NativeID: `0xa36c`,
+				ID:       `0x00007f494899a800`,
+				Priority: "5",
+			},
+		},
 	}
-	if th.NativeID != "0x2ea5" {
-		t.Error("Expected '0x2ea5', got ", th.NativeID)
+
+	for _, tc := range tests {
+		got := extractThreadInfoFromLine(tc.threadInfoHeadLine)
+		if got.ID != tc.want.ID {
+			t.Errorf("got=[%s], want=[%s]", got.ID, tc.want.ID)
+		}
+		if got.Daemon != tc.want.Daemon {
+			t.Errorf("got=[%t], want=[%t]", got.Daemon, tc.want.Daemon)
+		}
+		if got.Name != tc.want.Name {
+			t.Errorf("got=[%s], want=[%s]", got.Name, tc.want.Name)
+		}
+		if got.NativeID != tc.want.NativeID {
+			t.Errorf("got=[%s], want=[%s]", got.NativeID, tc.want.NativeID)
+		}
+		if got.Priority != tc.want.Priority {
+			t.Errorf("got=[%s], want=[%s]", got.Priority, tc.want.Priority)
+		}
+		if got.ID != tc.want.ID {
+			t.Errorf("got=[%s], want=[%s]", got.ID, tc.want.ID)
+		}
 	}
 }
 
@@ -278,6 +338,55 @@ at java.lang.Thread.run(Thread.java:682)`
 	if identicalStackTrace[stacktrace] != expectedNumberOfThreadsWithIdenticalStackTrace {
 		t.Errorf("Should have identified %d (got=%d) threads with the following stacktrace:\n[%s]",
 			expectedNumberOfThreadsWithIdenticalStackTrace, identicalStackTrace[stacktrace], stacktrace)
+	}
+
+}
+
+func TestVerifyNumberOfThreadsInSamples(t *testing.T) {
+	type testCase struct {
+		sampleFileName string
+		want           int
+	}
+
+	tests := []testCase{
+		{"samples/10.0.2.0.txt", 51},
+	}
+
+	for _, tc := range tests {
+		threads, err := ParseFromFile2(tc.sampleFileName)
+		if err != nil {
+			t.Error(err)
+		}
+		if len(threads) != tc.want {
+			t.Errorf("got=[%d], want=[%d]", len(threads), tc.want)
+		}
+	}
+
+}
+
+func TestHasRunnableState(t *testing.T) {
+
+	type testCase struct {
+		threadHeaderLine string
+		want             bool
+	}
+
+	tests := []testCase{
+		testCase{
+			threadHeaderLine: `GC Thread#3" os_prio=0 cpu=21.13ms elapsed=146.91s tid=0x00007f1914004000 nid=0xb08d runnable  `,
+			want:             true,
+		},
+		testCase{
+			threadHeaderLine: `"Finalizer" #3 daemon prio=8 os_prio=0 cpu=0.77ms elapsed=741.83s tid=0x00007f6f5c29e000 nid=0x6b90 in Object.wait()  [0x00007f6f13ffe000]`,
+			want:             false,
+		},
+	}
+
+	for _, tc := range tests {
+		got := hasRunnableState(tc.threadHeaderLine)
+		if got != tc.want {
+			t.Errorf("got=[%t], want=[%t]", got, tc.want)
+		}
 	}
 
 }

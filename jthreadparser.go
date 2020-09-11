@@ -11,10 +11,13 @@ import (
 )
 
 const (
-	threadInformationBegins     = "\""
-	threadNameRgx               = `^\"(.*)\".*prio=([0-9]+) tid=(\w*) nid=(\w*)\s\w*`
+	threadInformationBegins = "\""
+	// threadNameRgx               = `^\"(.*)\".*prio=([0-9]+) tid=(\w*) nid=(\w*)\s\w*`
+	threadNameRgx               = `^"(.*)".*\stid=(\w*) nid=(\w*)\s\w*`
+	threadNameWithPriorityRgx   = `^"(.*)".*\sprio=(\d+).*\stid=(\w*) nid=(\w*)\s\w*`
 	stateRgx                    = `\s+java.lang.Thread.State: (.*)`
 	lockedRgx                   = `\s*\- locked\s*<(.*)>\s*\(a\s(.*)\)`
+	runnableStateRgx            = `runnable\s{1,2}$`
 	parkingOrWaitingRgx         = `\s*\- (?:waiting on|parking to wait for)\s*<(.*)>\s*\(a\s(.*)\)`
 	stackTraceRgx               = `^\s+(at|\-\s).*\)$`
 	stackTraceRgxMethodName     = `at\s+(.*)$`
@@ -33,13 +36,20 @@ func (th ThreadInfo) String() string {
 
 func extractThreadInfoFromLine(line string) ThreadInfo {
 	ti := ThreadInfo{}
-	if rgxp, _ := regexp.Compile(threadNameRgx); rgxp.MatchString(line) {
-		if strings.Contains(line, " daemon ") {
-			ti.Daemon = true
+
+	ti.Daemon = strings.Contains(line, " daemon ")
+	if strings.Contains(line, " prio=") {
+		if rgxp, _ := regexp.Compile(threadNameWithPriorityRgx); rgxp.MatchString(line) {
+			for _, v := range rgxp.FindAllStringSubmatch(line, -1) {
+				ti.Name, ti.Priority, ti.ID, ti.NativeID =
+					v[threadNameRgxGroupIndex], v[threadPriorityRgxGroupIndex], v[threadIDRgxGroupIndex], v[threadNativeIDRgxGroupIndex]
+			}
 		}
-		for _, v := range rgxp.FindAllStringSubmatch(line, -1) {
-			ti.Name, ti.Priority, ti.ID, ti.NativeID =
-				v[threadNameRgxGroupIndex], v[threadPriorityRgxGroupIndex], v[threadIDRgxGroupIndex], v[threadNativeIDRgxGroupIndex]
+	} else {
+		if rgxp, _ := regexp.Compile(threadNameRgx); rgxp.MatchString(line) {
+			for _, v := range rgxp.FindAllStringSubmatch(line, -1) {
+				ti.Name, ti.ID, ti.NativeID = v[threadNameRgxGroupIndex], v[2], v[3]
+			}
 		}
 	}
 	return ti
@@ -80,6 +90,33 @@ func ParseFromFile(fileName string) ([]ThreadInfo, error) {
 	return threads, nil
 }
 
+func ParseFromFile2(fileName string) ([]ThreadInfo, error) {
+
+	file, err := os.Open(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	threads := make([]ThreadInfo, 0)
+	parse2(file, &threads)
+
+	return threads, nil
+}
+
+// ParseFromFile ...
+// func ParseFromFile2(fileName string) ([]ThreadInfo, error) {
+
+// 	file, err := os.Open(fileName)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	threads := make([]ThreadInfo, 0)
+// 	parse(file, &threads)
+
+// 	return threads, nil
+// }
+
 func parse(r io.Reader, threads *[]ThreadInfo) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -94,6 +131,30 @@ func parse(r io.Reader, threads *[]ThreadInfo) {
 		}
 
 	}
+}
+
+func hasRunnableState(threadHeaderLine string) bool {
+	rgxp := regexp.MustCompile(runnableStateRgx)
+	return rgxp.MatchString(threadHeaderLine)
+}
+
+func parse2(r io.Reader, threads *[]ThreadInfo) {
+	// scanner := bufio.NewScanner(r)
+	// tlines := make([]string, 0)
+
+	// // TODO: the following code can be moved to a function ...
+	// for scanner.Scan() {
+	// 	line := scanner.Text()
+	// 	tlines = append(tlines, line)
+	// }
+
+	// for i := 0; i < len(tlines); i++ {
+	// 	line := tlines[i]
+	// 	if strings.HasPrefix(line, threadInformationBegins) {
+	// 		threadInfo := extractThreadInfoFromLine(line)
+
+	// 	}
+	// }
 }
 
 // ParseFrom ...
