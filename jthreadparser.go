@@ -86,52 +86,9 @@ func ParseFromFile(fileName string) ([]ThreadInfo, error) {
 	}
 
 	threads := make([]ThreadInfo, 0)
-	parse2(file, &threads)
+	parse(file, &threads)
 
 	return threads, nil
-}
-
-func ParseFromFile2(fileName string) ([]ThreadInfo, error) {
-
-	file, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
-	}
-
-	threads := make([]ThreadInfo, 0)
-	parse2(file, &threads)
-
-	return threads, nil
-}
-
-// ParseFromFile ...
-// func ParseFromFile2(fileName string) ([]ThreadInfo, error) {
-
-// 	file, err := os.Open(fileName)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	threads := make([]ThreadInfo, 0)
-// 	parse(file, &threads)
-
-// 	return threads, nil
-// }
-
-func parseOLD(r io.Reader, threads *[]ThreadInfo) {
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-
-		if strings.HasPrefix(scanner.Text(), threadInformationBegins) {
-			ti := extractThreadInfoFromLine(scanner.Text())
-			scanner.Scan()
-			ti.State = extractThreadState(scanner.Text())
-			scanner.Scan()
-			ti.StackTrace = extractThreadStackTrace(scanner)
-			*threads = append(*threads, ti)
-		}
-
-	}
 }
 
 func hasRunnableState(threadHeaderLine string) bool {
@@ -139,7 +96,7 @@ func hasRunnableState(threadHeaderLine string) bool {
 	return rgxp.MatchString(threadHeaderLine)
 }
 
-func parse2(r io.Reader, threads *[]ThreadInfo) {
+func parse(r io.Reader, threads *[]ThreadInfo) {
 	scanner := bufio.NewScanner(r)
 	tlines := make([]string, 0)
 
@@ -219,7 +176,7 @@ func parse2(r io.Reader, threads *[]ThreadInfo) {
 // ParseFrom ...
 func ParseFrom(r io.Reader) ([]ThreadInfo, error) {
 	threads := make([]ThreadInfo, 0)
-	parse2(r, &threads)
+	parse(r, &threads)
 	return threads, nil
 }
 

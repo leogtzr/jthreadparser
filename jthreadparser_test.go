@@ -444,7 +444,7 @@ func TestVerifyNumberOfThreadsInSamples(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		threads, err := ParseFromFile2(tc.sampleFileName)
+		threads, err := ParseFromFile(tc.sampleFileName)
 		if err != nil {
 			t.Error(err)
 		}
@@ -466,7 +466,7 @@ func TestNoThreadDumpFile(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		threads, err := ParseFromFile2(tc.sampleFileName)
+		threads, err := ParseFromFile(tc.sampleFileName)
 		if err != nil {
 			t.Error(err)
 		}
@@ -560,5 +560,9 @@ func TestHasThreadHeaderInformation(t *testing.T) {
 			t.Errorf("got=[%t], want=[%t]", got, tc.want)
 		}
 	}
+
+}
+
+func TestLocks(t *testing.T) {
 
 }
