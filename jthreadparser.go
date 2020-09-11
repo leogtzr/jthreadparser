@@ -15,7 +15,7 @@ const (
 	// threadNameRgx               = `^\"(.*)\".*prio=([0-9]+) tid=(\w*) nid=(\w*)\s\w*`
 	threadNameRgx               = `^"(.*)".*\stid=(\w*) nid=(\w*)\s\w*`
 	threadNameWithPriorityRgx   = `^"(.*)".*\sprio=(\d+).*\stid=(\w*) nid=(\w*)\s\w*`
-	stateRgx                    = `\s+java.lang.Thread.State: (.*)`
+	stateRgx                    = `\s*java.lang.Thread.State: (.*)`
 	lockedRgx                   = `\s*\- locked\s*<(.*)>\s*\(a\s(.*)\)`
 	runnableStateRgx            = `runnable\s{1,2}$`
 	parkingOrWaitingRgx         = `\s*\- (?:waiting on|parking to wait for)\s*<(.*)>\s*\(a\s(.*)\)`
@@ -139,22 +139,32 @@ func hasRunnableState(threadHeaderLine string) bool {
 }
 
 func parse2(r io.Reader, threads *[]ThreadInfo) {
-	// scanner := bufio.NewScanner(r)
-	// tlines := make([]string, 0)
+	scanner := bufio.NewScanner(r)
+	tlines := make([]string, 0)
 
-	// // TODO: the following code can be moved to a function ...
-	// for scanner.Scan() {
-	// 	line := scanner.Text()
-	// 	tlines = append(tlines, line)
-	// }
+	// TODO: the following code can be moved to a function ...
+	for scanner.Scan() {
+		line := scanner.Text()
+		tlines = append(tlines, line)
+	}
 
-	// for i := 0; i < len(tlines); i++ {
-	// 	line := tlines[i]
-	// 	if strings.HasPrefix(line, threadInformationBegins) {
-	// 		threadInfo := extractThreadInfoFromLine(line)
+	for i := 0; i < len(tlines); i++ {
+		line := tlines[i]
+		if strings.HasPrefix(line, threadInformationBegins) {
+			threadInfo := extractThreadInfoFromLine(line)
 
-	// 	}
-	// }
+			if hasRunnableState(line) {
+				threadInfo.State = "runnable"
+			}
+
+			i++
+			if i < len(tlines) {
+				line = tlines[i]
+			} else {
+				break
+			}
+		}
+	}
 }
 
 // ParseFrom ...

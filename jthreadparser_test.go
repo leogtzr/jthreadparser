@@ -170,10 +170,27 @@ func TestThreadInfo(t *testing.T) {
 }
 
 func TestExtractThreadState(t *testing.T) {
-	const expectedState = "TIMED_WAITING"
-	state := extractThreadState(threadStateLine)
-	if state != expectedState {
-		t.Errorf("Expected '%s', got '%s'", expectedState, state)
+
+	type testCase struct {
+		threadStateLine, want string
+	}
+
+	tests := []testCase{
+		testCase{
+			threadStateLine: `   java.lang.Thread.State: BLOCKED (on object monitor)`,
+			want:            "BLOCKED",
+		},
+		testCase{
+			threadStateLine: `java.lang.Thread.State: TIMED_WAITING (on object monitor)`,
+			want:            `TIMED_WAITING`,
+		},
+	}
+
+	for _, tc := range tests {
+		got := extractThreadState(tc.threadStateLine)
+		if got != tc.want {
+			t.Errorf("got=[%s], want=[%s]", got, tc.want)
+		}
 	}
 }
 
