@@ -208,17 +208,29 @@ func TestShouldIdentifyDaemonThread(t *testing.T) {
 }
 
 func TestShouldTagCorrectlyDaemonThread(t *testing.T) {
-	expectedThreadStringInfo := "Thread Id: '0x00007f90d0106000' (daemon), Name: 'Attach Listener', State: 'RUNNABLE'"
 
-	th := ThreadInfo{ID: "0x00007f90d0106000", Name: "Attach Listener", State: "RUNNABLE", Daemon: true}
-	if th.String() != expectedThreadStringInfo {
-		t.Errorf("got=[%s], expected=[%s]", th.String(), expectedThreadStringInfo)
+	type testCase struct {
+		threadInfo ThreadInfo
+		want       string
 	}
 
-	th.Daemon = false
-	expectedThreadStringInfo = "Thread Id: '0x00007f90d0106000', Name: 'Attach Listener', State: 'RUNNABLE'"
-	if th.String() != expectedThreadStringInfo {
-		t.Errorf("got=[%s], expected=[%s]", th.String(), expectedThreadStringInfo)
+	tests := []testCase{
+		testCase{
+			threadInfo: ThreadInfo{ID: "0x00007f90d0106000", Name: "Attach Listener", State: "RUNNABLE", Daemon: true},
+			want:       `Thread Id: '0x00007f90d0106000' (daemon), Name: 'Attach Listener', State: 'RUNNABLE'`,
+		},
+
+		testCase{
+			threadInfo: ThreadInfo{ID: "0x00007f90d0106000", Name: "Attach Listener", State: "RUNNABLE", Daemon: false},
+			want:       `Thread Id: '0x00007f90d0106000', Name: 'Attach Listener', State: 'RUNNABLE'`,
+		},
+	}
+
+	for _, tc := range tests {
+		got := tc.threadInfo.String()
+		if got != tc.want {
+			t.Errorf("got=[%s], expected=[%s]", tc.threadInfo.String(), tc.want)
+		}
 	}
 }
 
@@ -320,19 +332,31 @@ func TestParseFromFile(t *testing.T) {
 }
 
 func TestTopMethodsInThreads(t *testing.T) {
+
+	type testCase struct {
+		javaMethodName string
+		want           int
+	}
+
 	threads, err := ParseFromFile("tdump.sample")
 	if err != nil {
 		t.Error("Unable to parse thread dump sample file")
 	}
 
-	mostUsedMethods := MostUsedMethods(&threads)
-	javaMethodName := "java.lang.Object.wait(Native Method)"
-
-	expectedNumberOfThreadsWithMethodName := 82
-
-	if mostUsedMethods[javaMethodName] != expectedNumberOfThreadsWithMethodName {
-		t.Errorf("Should have identified %d threads, got=%d", expectedNumberOfThreadsWithMethodName, mostUsedMethods[javaMethodName])
+	tests := []testCase{
+		testCase{
+			javaMethodName: "java.lang.Object.wait(Native Method)",
+			want:           82,
+		},
 	}
+
+	for _, tc := range tests {
+		got := MostUsedMethods(&threads)
+		if got[tc.javaMethodName] != tc.want {
+			t.Errorf("Should have identified %d threads, got=%d", tc.want, got[tc.javaMethodName])
+		}
+	}
+
 }
 
 func TestIdenticalStrackTrace(t *testing.T) {
