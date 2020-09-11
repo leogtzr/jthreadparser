@@ -360,25 +360,37 @@ func TestTopMethodsInThreads(t *testing.T) {
 }
 
 func TestIdenticalStrackTrace(t *testing.T) {
-	expectedNumberOfThreadsWithIdenticalStackTrace := 20
-	stacktrace := `at sun.misc.Unsafe.park(Native Method)
+
+	type testCase struct {
+		stacktrace string
+		want       int
+	}
+
+	tests := []testCase{
+		testCase{
+			stacktrace: `at sun.misc.Unsafe.park(Native Method)
 - parking to wait for  <0x0000000750785368> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
 at java.util.concurrent.locks.LockSupport.park(LockSupport.java:156)
 at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:1987)
 at java.util.concurrent.LinkedBlockingQueue.take(LinkedBlockingQueue.java:399)
 at java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:957)
 at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:917)
-at java.lang.Thread.run(Thread.java:682)`
+at java.lang.Thread.run(Thread.java:682)`,
+			want: 20,
+		},
+	}
 
 	threads, err := ParseFromFile("tdump.sample")
 	if err != nil {
 		t.Error("Unable to parse thread dump sample file")
 	}
 
-	identicalStackTrace := IdenticalStackTrace(&threads)
-	if identicalStackTrace[stacktrace] != expectedNumberOfThreadsWithIdenticalStackTrace {
-		t.Errorf("Should have identified %d (got=%d) threads with the following stacktrace:\n%s\nEND",
-			expectedNumberOfThreadsWithIdenticalStackTrace, identicalStackTrace[stacktrace], stacktrace)
+	for _, tc := range tests {
+		got := IdenticalStackTrace(&threads)
+		if got[tc.stacktrace] != tc.want {
+			t.Errorf("Should have identified %d (got=%d) threads with the following stacktrace:\n%s\nEND",
+				tc.want, got[tc.stacktrace], tc.stacktrace)
+		}
 	}
 
 }
