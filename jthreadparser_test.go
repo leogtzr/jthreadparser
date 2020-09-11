@@ -353,7 +353,7 @@ at java.lang.Thread.run(Thread.java:682)`
 
 	identicalStackTrace := IdenticalStackTrace(&threads)
 	if identicalStackTrace[stacktrace] != expectedNumberOfThreadsWithIdenticalStackTrace {
-		t.Errorf("Should have identified %d (got=%d) threads with the following stacktrace:\n[%s]",
+		t.Errorf("Should have identified %d (got=%d) threads with the following stacktrace:\n%s\nEND",
 			expectedNumberOfThreadsWithIdenticalStackTrace, identicalStackTrace[stacktrace], stacktrace)
 	}
 
@@ -367,6 +367,44 @@ func TestVerifyNumberOfThreadsInSamples(t *testing.T) {
 
 	tests := []testCase{
 		{"samples/10.0.2.0.txt", 51},
+		{"samples/10.0.2.2.txt", 51},
+		{"samples/10.0.2.3.txt", 51},
+		{"samples/11.0.2.0.txt", 43},
+		{"samples/11.0.2.1.txt", 46},
+		{"samples/11.0.2.2.txt", 50},
+		{"samples/11.0.2.3.txt", 50},
+		{"samples/11.0.8.0-amazon.txt", 99},
+		{"samples/11.0.8.1-amazon.txt", 99},
+		{"samples/11.0.8.2-amazon.txt", 48},
+		{"samples/11.0.8.3-amazon.txt", 48},
+		{"samples/12.0.2.0.txt", 49},
+		{"samples/12.0.2.1.txt", 48},
+		{"samples/12.0.2.2.txt", 48},
+		{"samples/12.0.2.3.txt", 48},
+		{"samples/13.0.2.0.txt", 42},
+		{"samples/13.0.2.1.txt", 42},
+		{"samples/13.0.2.2.txt", 50},
+		{"samples/13.0.2.3.txt", 48},
+		{"samples/14.0.1.0.txt", 51},
+		{"samples/14.0.1.1.txt", 51},
+		{"samples/14.0.1.2.txt", 51},
+		{"samples/14.0.1.3.txt", 50},
+		{"samples/15.0.txt", 43},
+		{"samples/15.1.txt", 51},
+		{"samples/15.2.txt", 51},
+		{"samples/15.3.txt", 49},
+		{"samples/1.8-amazon.0.txt", 37},
+		{"samples/1.8-amazon.1.txt", 37},
+		{"samples/1.8-amazon.2.txt", 37},
+		{"samples/1.8-amazon.3.txt", 37},
+		{"samples/9.0.4.0.txt", 51},
+		{"samples/9.0.4.1.txt", 51},
+		{"samples/9.0.4.2.txt", 51},
+		{"samples/9.0.4.3.txt", 51},
+		{"samples/tdump2.sample", 58},
+		{"samples/tdump.jdk11.idea.txt", 56},
+		{"samples/tdump.sample", 203},
+		{"samples/x.txt", 0},
 	}
 
 	for _, tc := range tests {
@@ -379,6 +417,28 @@ func TestVerifyNumberOfThreadsInSamples(t *testing.T) {
 		}
 	}
 
+}
+
+func TestNoThreadDumpFile(t *testing.T) {
+	type testCase struct {
+		sampleFileName string
+		want           int
+	}
+
+	tests := []testCase{
+		{"samples/x.txt", 0},
+	}
+
+	for _, tc := range tests {
+		threads, err := ParseFromFile2(tc.sampleFileName)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if len(threads) != tc.want {
+			t.Errorf("got=[%d], want=[%d]", len(threads), tc.want)
+		}
+	}
 }
 
 func TestHasRunnableState(t *testing.T) {
@@ -401,6 +461,65 @@ func TestHasRunnableState(t *testing.T) {
 
 	for _, tc := range tests {
 		got := hasRunnableState(tc.threadHeaderLine)
+		if got != tc.want {
+			t.Errorf("got=[%t], want=[%t]", got, tc.want)
+		}
+	}
+
+}
+
+func TestWaitingOnConditionState(t *testing.T) {
+	type testCase struct {
+		threadHeaderLine string
+		want             bool
+	}
+
+	tests := []testCase{
+		testCase{
+			threadHeaderLine: `"VM Periodic Task Thread" os_prio=0 tid=0x00007f74bc22d800 nid=0xd9c4 waiting on condition `,
+			want:             true,
+		},
+		testCase{
+			threadHeaderLine: `"Finalizer" #3 daemon prio=8 os_prio=0 cpu=0.77ms elapsed=741.83s tid=0x00007f6f5c29e000 nid=0x6b90 in Object.wait()  [0x00007f6f13ffe000]`,
+			want:             false,
+		},
+	}
+
+	for _, tc := range tests {
+		got := hasWaitingOnState(tc.threadHeaderLine)
+		if got != tc.want {
+			t.Errorf("got=[%t], want=[%t]", got, tc.want)
+		}
+	}
+}
+
+func TestHasThreadHeaderInformation(t *testing.T) {
+	type testCase struct {
+		threadHeader string
+		want         bool
+	}
+
+	tests := []testCase{
+		testCase{
+			threadHeader: `"VM Thread" os_prio=0 cpu=235.82ms elapsed=147.51s tid=0x00007f904819cef0 nid=0xbfd2 runnable`,
+			want:         true,
+		},
+		testCase{
+			threadHeader: `"http-nio-8080-exec-8" #27 daemon prio=5 os_prio=0 cpu=1.67ms elapsed=144.34s tid=0x00007f9049128ec0 nid=0xc03f waiting for monitor entry  [0x00007f8faf0f0000]`,
+			want:         true,
+		},
+		testCase{
+			threadHeader: `"OPPORTUNITY"`,
+			want:         false,
+		},
+		testCase{
+			threadHeader: `Hello!`,
+			want:         false,
+		},
+	}
+
+	for _, tc := range tests {
+		got := hasThreadHeaderInformation(tc.threadHeader)
 		if got != tc.want {
 			t.Errorf("got=[%t], want=[%t]", got, tc.want)
 		}

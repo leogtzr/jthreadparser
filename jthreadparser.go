@@ -11,13 +11,14 @@ import (
 )
 
 const (
-	threadInformationBegins = "\""
-	// threadNameRgx               = `^\"(.*)\".*prio=([0-9]+) tid=(\w*) nid=(\w*)\s\w*`
+	threadInformationBegins     = "\""
+	threadHeaderInfoRgx         = `^\"(.*).*tid=(\w*) nid=(\w*)\s\w*`
 	threadNameRgx               = `^"(.*)".*\stid=(\w*) nid=(\w*)\s\w*`
 	threadNameWithPriorityRgx   = `^"(.*)".*\sprio=(\d+).*\stid=(\w*) nid=(\w*)\s\w*`
 	stateRgx                    = `\s*java.lang.Thread.State: (.*)`
 	lockedRgx                   = `\s*\- locked\s*<(.*)>\s*\(a\s(.*)\)`
 	runnableStateRgx            = `runnable\s{1,2}$`
+	waitingOnStateRgx           = `waiting on condition\s{1,2}$`
 	parkingOrWaitingRgx         = `\s*\- (?:waiting on|parking to wait for)\s*<(.*)>\s*\(a\s(.*)\)`
 	stackTraceRgx               = `^\s+(at|\-\s).*\)$`
 	stackTraceRgxMethodName     = `at\s+(.*)$`
@@ -85,7 +86,7 @@ func ParseFromFile(fileName string) ([]ThreadInfo, error) {
 	}
 
 	threads := make([]ThreadInfo, 0)
-	parse(file, &threads)
+	parse2(file, &threads)
 
 	return threads, nil
 }
@@ -117,7 +118,7 @@ func ParseFromFile2(fileName string) ([]ThreadInfo, error) {
 // 	return threads, nil
 // }
 
-func parse(r io.Reader, threads *[]ThreadInfo) {
+func parseOLD(r io.Reader, threads *[]ThreadInfo) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 
@@ -142,7 +143,6 @@ func parse2(r io.Reader, threads *[]ThreadInfo) {
 	scanner := bufio.NewScanner(r)
 	tlines := make([]string, 0)
 
-	// TODO: the following code can be moved to a function ...
 	for scanner.Scan() {
 		line := scanner.Text()
 		tlines = append(tlines, line)
@@ -150,7 +150,7 @@ func parse2(r io.Reader, threads *[]ThreadInfo) {
 
 	for i := 0; i < len(tlines); i++ {
 		line := tlines[i]
-		if strings.HasPrefix(line, threadInformationBegins) {
+		if hasThreadHeaderInformation(line) {
 			threadInfo := extractThreadInfoFromLine(line)
 
 			if hasRunnableState(line) {
@@ -163,6 +163,55 @@ func parse2(r io.Reader, threads *[]ThreadInfo) {
 			} else {
 				break
 			}
+			// Look for the thread state:
+			if threadState := extractThreadState(line); len(threadState) != 0 {
+				threadInfo.State = threadState
+				if i < len(tlines) {
+					line = tlines[i]
+					i++
+				}
+			} else {
+				i--
+			}
+
+			// There could be two threads together without a thread state ...
+			if hasThreadHeaderInformation(line) {
+				line2 := line
+				threadInfo2 := extractThreadInfoFromLine(line2)
+				if hasRunnableState(line2) {
+					threadInfo2.State = "runnable"
+				} else if hasWaitingOnState(line2) {
+					threadInfo2.State = "waiting on condition"
+				}
+				*threads = append(*threads, threadInfo2)
+				i++
+			}
+
+			if i < len(tlines) {
+				line = tlines[i]
+			} else {
+				break
+			}
+
+			var sb strings.Builder
+			for (len(line) > 0) && !strings.HasPrefix(line, threadInformationBegins) {
+				sb.WriteString(strings.TrimSpace(line))
+				sb.WriteString("\n")
+				i++
+
+				if i < len(tlines) {
+					line = tlines[i]
+				} else {
+					break
+				}
+			}
+
+			stackTrace := sb.String()
+			if len(stackTrace) > 0 {
+				threadInfo.StackTrace = stackTrace
+			}
+
+			*threads = append(*threads, threadInfo)
 		}
 	}
 }
@@ -170,7 +219,7 @@ func parse2(r io.Reader, threads *[]ThreadInfo) {
 // ParseFrom ...
 func ParseFrom(r io.Reader) ([]ThreadInfo, error) {
 	threads := make([]ThreadInfo, 0)
-	parse(r, &threads)
+	parse2(r, &threads)
 	return threads, nil
 }
 
@@ -315,4 +364,14 @@ func extractThreadWaiting(
 	}
 	return threadsWaiting
 
+}
+
+func hasWaitingOnState(threadHeaderLine string) bool {
+	rgxp := regexp.MustCompile(waitingOnStateRgx)
+	return rgxp.MatchString(threadHeaderLine)
+}
+
+func hasThreadHeaderInformation(threadHeaderLine string) bool {
+	rgxp := regexp.MustCompile(threadHeaderInfoRgx)
+	return rgxp.MatchString(threadHeaderLine)
 }
