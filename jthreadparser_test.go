@@ -456,6 +456,7 @@ func TestVerifyNumberOfThreadsInSamples(t *testing.T) {
 }
 
 func TestNoThreadDumpFile(t *testing.T) {
+
 	type testCase struct {
 		sampleFileName string
 		want           int
@@ -475,6 +476,7 @@ func TestNoThreadDumpFile(t *testing.T) {
 			t.Errorf("got=[%d], want=[%d]", len(threads), tc.want)
 		}
 	}
+
 }
 
 func TestHasRunnableState(t *testing.T) {
@@ -558,6 +560,73 @@ func TestHasThreadHeaderInformation(t *testing.T) {
 		got := hasThreadHeaderInformation(tc.threadHeader)
 		if got != tc.want {
 			t.Errorf("got=[%t], want=[%t]", got, tc.want)
+		}
+	}
+
+}
+
+func TestCheckThreadInfo(t *testing.T) {
+
+	threads, err := ParseFromFile("threaddumpsamples/9.0.4.0-test.txt")
+	if err != nil {
+		t.Error(err)
+	}
+
+	const expectedNumberOfThreadsInSampleFile = 5
+	if len(threads) != expectedNumberOfThreadsInSampleFile {
+		t.Errorf("got=[%d] threads, expected=[%d]", len(threads), expectedNumberOfThreadsInSampleFile)
+	}
+
+	type testCase struct {
+		threadName string
+		isDaemon   bool
+		threadID   string
+		nativeID   string
+		state      string
+	}
+
+	tests := []testCase{
+		testCase{
+			threadName: `Attach Listener`,
+			isDaemon:   true,
+			threadID:   `0x00007f321c001000`,
+			nativeID:   `0x5ac6`,
+			state:      `RUNNABLE`,
+		},
+		testCase{
+			threadName: `DestroyJavaVM`,
+			isDaemon:   false,
+			threadID:   `0x00007f32b4012000`,
+			nativeID:   `0x5934`,
+			state:      `RUNNABLE`,
+		},
+		testCase{
+			threadName: `scheduling-1`,
+			isDaemon:   false,
+			threadID:   `0x00007f32b556c000`,
+			nativeID:   `0x596c`,
+			state:      `TIMED_WAITING`,
+		},
+		testCase{
+			threadName: `http-nio-8080-Acceptor`,
+			isDaemon:   true,
+			threadID:   `0x00007f32b53d7000`,
+			nativeID:   `0x596b`,
+			state:      `RUNNABLE`,
+		},
+		testCase{
+			threadName: `http-nio-8080-ClientPoller`,
+			isDaemon:   true,
+			threadID:   `0x00007f32b53f1000`,
+			nativeID:   `0x596a`,
+			state:      `RUNNABLE`,
+		},
+	}
+
+	for i := 0; i < expectedNumberOfThreadsInSampleFile; i++ {
+		thread := threads[i]
+		if thread.Name != tests[i].threadName {
+			t.Errorf("got=[%s], expected=[%s]", thread.Name, tests[i].threadName)
 		}
 	}
 
