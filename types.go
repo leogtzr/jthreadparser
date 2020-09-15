@@ -10,3 +10,5 @@ type ThreadInfo struct {
 type Locked struct {
 	LockID, LockecObjectName string
 }
+
+type SynchronizerState int

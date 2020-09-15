@@ -783,3 +783,7 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 	}
 
 }
+
+func TestAwaitingNotification(t *testing.T) {
+	//
+}
