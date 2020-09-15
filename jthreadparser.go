@@ -2,7 +2,6 @@ package jthreadparser
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -65,16 +64,6 @@ func extractThreadState(line string) string {
 		}
 	}
 	return ""
-}
-
-func extractThreadStackTrace(scanner *bufio.Scanner) string {
-	var buffer bytes.Buffer
-	for len(strings.TrimSpace(scanner.Text())) != 0 {
-		buffer.WriteString(strings.TrimSpace(scanner.Text()))
-		buffer.WriteString("\n")
-		scanner.Scan()
-	}
-	return buffer.String()
 }
 
 // ParseFromFile ...
