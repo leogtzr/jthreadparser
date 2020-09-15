@@ -1,0 +1,4 @@
+Optional[at java.lang.ref.Reference.waitForReferencePendingList(java.base@14.0.1/Native Method)
+at java.lang.ref.Reference.processPendingReferences(java.base@14.0.1/Reference.java:241)
+at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:213)
+]

@@ -73,6 +73,7 @@ func ParseFromFile(fileName string) ([]ThreadInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
 	threads := make([]ThreadInfo, 0)
 	parse(file, &threads)
