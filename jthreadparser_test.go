@@ -624,16 +624,32 @@ func TestCheckThreadInfo(t *testing.T) {
 	}
 
 	for i := 0; i < expectedNumberOfThreadsInSampleFile; i++ {
-		thread := threads[i]
-		if thread.Name != tests[i].threadName {
-			t.Errorf("got=[%s], expected=[%s]", thread.Name, tests[i].threadName)
+		got := threads[i]
+		if got.Name != tests[i].threadName {
+			t.Errorf("got=[%s], expected=[%s]", got.Name, tests[i].threadName)
+		}
+
+		if got.Daemon != tests[i].isDaemon {
+			t.Errorf("got=[%t], want=[%t]", got.Daemon, tests[i].isDaemon)
+		}
+
+		if got.ID != tests[i].threadID {
+			t.Errorf("got=[%s], want=[%s]", got.ID, tests[i].threadID)
+		}
+
+		if got.NativeID != tests[i].nativeID {
+			t.Errorf("got=[%s], want=[%s]", got.NativeID, tests[i].nativeID)
+		}
+
+		if got.State != tests[i].state {
+			t.Errorf("got=[%s], want=[%s]", got.State, tests[i].state)
 		}
 	}
 
 }
 
 func TestCheckThreadInfo2(t *testing.T) {
-	//
+
 	threads, err := ParseFromFile("threaddumpsamples/14.0.1.1-together.txt")
 	if err != nil {
 		t.Error(err)
