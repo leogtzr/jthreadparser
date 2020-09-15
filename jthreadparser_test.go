@@ -631,3 +631,139 @@ func TestCheckThreadInfo(t *testing.T) {
 	}
 
 }
+
+func TestCheckThreadInfo2(t *testing.T) {
+	//
+	threads, err := ParseFromFile("threaddumpsamples/14.0.1.1-together.txt")
+	if err != nil {
+		t.Error(err)
+	}
+
+	const expectedNumberOfThreadsInSampleFile = 9
+	if len(threads) != expectedNumberOfThreadsInSampleFile {
+		t.Errorf("got=[%d] threads, expected=[%d]", len(threads), expectedNumberOfThreadsInSampleFile)
+	}
+
+	type testCase struct {
+		threadName string
+		isDaemon   bool
+		threadID   string
+		nativeID   string
+		state      string
+		stackTrace string
+	}
+
+	test := []testCase{
+		testCase{
+			threadName: `Reference Handler`,
+			isDaemon:   true,
+			threadID:   `0x00007f195c29c000`,
+			nativeID:   `0xb07f`,
+			state:      `RUNNABLE`,
+			stackTrace: `at java.lang.ref.Reference.waitForReferencePendingList(java.base@14.0.1/Native Method)
+at java.lang.ref.Reference.processPendingReferences(java.base@14.0.1/Reference.java:241)
+at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:213)
+`,
+		},
+
+		testCase{
+			threadName: `VM Thread`,
+			isDaemon:   false,
+			threadID:   `0x00007f195c299000`,
+			nativeID:   `0xb07e`,
+			state:      `runnable`,
+			stackTrace: ``,
+		},
+
+		testCase{
+			threadName: `GC Thread#7`,
+			isDaemon:   false,
+			threadID:   `0x00007f191400a800`,
+			nativeID:   `0xb091`,
+			state:      `runnable`,
+			stackTrace: ``,
+		},
+
+		testCase{
+			threadName: `G1 Main Marker`,
+			isDaemon:   false,
+			threadID:   `0x00007f195c08c000`,
+			nativeID:   `0xb07a`,
+			state:      `runnable`,
+			stackTrace: ``,
+		},
+
+		testCase{
+			threadName: `G1 Conc#0`,
+			isDaemon:   false,
+			threadID:   `0x00007f195c08d800`,
+			nativeID:   `0xb07b`,
+			state:      `runnable`,
+			stackTrace: ``,
+		},
+
+		testCase{
+			threadName: `G1 Conc#1`,
+			isDaemon:   false,
+			threadID:   `0x00007f1924001000`,
+			nativeID:   `0xb097`,
+			state:      `runnable`,
+			stackTrace: ``,
+		},
+
+		testCase{
+			threadName: `G1 Refine#0`,
+			isDaemon:   false,
+			threadID:   `0x00007f195c20c000`,
+			nativeID:   `0xb07c`,
+			state:      `runnable`,
+			stackTrace: ``,
+		},
+
+		testCase{
+			threadName: `G1 Young RemSet Sampling`,
+			isDaemon:   false,
+			threadID:   `0x00007f195c20d800`,
+			nativeID:   `0xb07d`,
+			state:      `runnable`,
+			stackTrace: ``,
+		},
+
+		testCase{
+			threadName: `VM Periodic Task Thread`,
+			isDaemon:   false,
+			threadID:   `0x00007f195c30f000`,
+			nativeID:   `0xb087`,
+			state:      `waiting on condition`,
+			stackTrace: ``,
+		},
+	}
+
+	for i := 0; i < expectedNumberOfThreadsInSampleFile; i++ {
+		got := threads[i]
+		if got.Name != test[i].threadName {
+			t.Errorf("got=[%s], want=[%s]", got.Name, test[i].threadName)
+		}
+
+		if got.Daemon != test[i].isDaemon {
+			t.Errorf("got=[%t], want=[%t]", got.Daemon, test[i].isDaemon)
+		}
+
+		if got.ID != test[i].threadID {
+			t.Errorf("got=[%s], want=[%s]", got.ID, test[i].threadID)
+		}
+
+		if got.NativeID != test[i].nativeID {
+			t.Errorf("got=[%s], want=[%s]", got.NativeID, test[i].nativeID)
+		}
+
+		if got.State != test[i].state {
+			t.Errorf("got=[%s], want=[%s]", got.State, test[i].state)
+		}
+
+		if got.StackTrace != test[i].stackTrace {
+			t.Errorf("got=[\n{%s}\n], want=[\n{%s}\n]", got.StackTrace, test[i].stackTrace)
+		}
+	}
+
+}

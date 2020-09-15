@@ -1,0 +1,42 @@
+2020-09-03 17:00:30
+Full thread dump OpenJDK 64-Bit Server VM (14.0.1+7 mixed mode, sharing):
+
+Threads class SMR info:
+_java_thread_list=0x00007f186c000c00, length=36, elements={
+0x00007f195c29c000, 0x00007f195c29e000, 0x00007f195c2a5000, 0x00007f195c2a7000,
+0x00007f195c2a9000, 0x00007f195c2ab000, 0x00007f195c2ad000, 0x00007f195c30c800,
+0x00007f195c311000, 0x00007f195d650800, 0x00007f18c4004800, 0x00007f195d6e0000,
+0x00007f195cc67800, 0x00007f195d286800, 0x00007f195d2ca000, 0x00007f195d42e800,
+0x00007f195d430000, 0x00007f195d452800, 0x00007f195d454000, 0x00007f195d4a7800,
+0x00007f195d4a9800, 0x00007f195d502000, 0x00007f195d503800, 0x00007f195d767000,
+0x00007f195cf60800, 0x00007f195c4cd000, 0x00007f195c029800, 0x00007f1908001000,
+0x00007f18ec105800, 0x00007f18e0b42800, 0x00007f187801c000, 0x00007f18e007d000,
+0x00007f1870007000, 0x00007f18e007e800, 0x00007f18e0080000, 0x00007f18e0081800
+}
+
+"Reference Handler" #2 daemon prio=10 os_prio=0 cpu=2.47ms elapsed=67.17s tid=0x00007f195c29c000 nid=0xb07f waiting on condition  [0x00007f19304df000]
+   java.lang.Thread.State: RUNNABLE
+	at java.lang.ref.Reference.waitForReferencePendingList(java.base@14.0.1/Native Method)
+	at java.lang.ref.Reference.processPendingReferences(java.base@14.0.1/Reference.java:241)
+	at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:213)
+
+   Locked ownable synchronizers:
+	- None
+
+"VM Thread" os_prio=0 cpu=87.90ms elapsed=67.17s tid=0x00007f195c299000 nid=0xb07e runnable  
+
+"GC Thread#7" os_prio=0 cpu=21.94ms elapsed=66.87s tid=0x00007f191400a800 nid=0xb091 runnable  
+
+"G1 Main Marker" os_prio=0 cpu=0.78ms elapsed=67.18s tid=0x00007f195c08c000 nid=0xb07a runnable  
+
+"G1 Conc#0" os_prio=0 cpu=6.33ms elapsed=67.18s tid=0x00007f195c08d800 nid=0xb07b runnable  
+
+"G1 Conc#1" os_prio=0 cpu=5.96ms elapsed=65.27s tid=0x00007f1924001000 nid=0xb097 runnable  
+
+"G1 Refine#0" os_prio=0 cpu=2.91ms elapsed=67.17s tid=0x00007f195c20c000 nid=0xb07c runnable  
+
+"G1 Young RemSet Sampling" os_prio=0 cpu=15.08ms elapsed=67.17s tid=0x00007f195c20d800 nid=0xb07d runnable  
+"VM Periodic Task Thread" os_prio=0 cpu=68.57ms elapsed=67.15s tid=0x00007f195c30f000 nid=0xb087 waiting on condition  
+
+JNI global refs: 29, weak refs: 0
+

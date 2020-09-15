@@ -97,6 +97,7 @@ func hasRunnableState(threadHeaderLine string) bool {
 }
 
 func parse(r io.Reader, threads *[]ThreadInfo) {
+
 	scanner := bufio.NewScanner(r)
 	tlines := make([]string, 0)
 
@@ -109,6 +110,8 @@ func parse(r io.Reader, threads *[]ThreadInfo) {
 		line := tlines[i]
 		if hasThreadHeaderInformation(line) {
 			threadInfo := extractThreadInfoFromLine(line)
+			threadInfoTogether := ThreadInfo{}
+			threadTogether := false
 
 			if hasRunnableState(line) {
 				threadInfo.State = "runnable"
@@ -120,6 +123,7 @@ func parse(r io.Reader, threads *[]ThreadInfo) {
 			} else {
 				break
 			}
+
 			// Look for the thread state:
 			if threadState := extractThreadState(line); len(threadState) != 0 {
 				threadInfo.State = threadState
@@ -134,13 +138,14 @@ func parse(r io.Reader, threads *[]ThreadInfo) {
 			// There could be two threads together without a thread state ...
 			if hasThreadHeaderInformation(line) {
 				line2 := line
-				threadInfo2 := extractThreadInfoFromLine(line2)
+				threadInfoTogether = extractThreadInfoFromLine(line2)
+				threadTogether = true
 				if hasRunnableState(line2) {
-					threadInfo2.State = "runnable"
+					threadInfoTogether.State = "runnable"
 				} else if hasWaitingOnState(line2) {
-					threadInfo2.State = "waiting on condition"
+					threadInfoTogether.State = "waiting on condition"
 				}
-				*threads = append(*threads, threadInfo2)
+				// *threads = append(*threads, threadInfo2)
 				i++
 			}
 
@@ -168,7 +173,13 @@ func parse(r io.Reader, threads *[]ThreadInfo) {
 				threadInfo.StackTrace = stackTrace
 			}
 
-			*threads = append(*threads, threadInfo)
+			if threadTogether {
+				*threads = append(*threads, threadInfo)
+				*threads = append(*threads, threadInfoTogether)
+			} else {
+				*threads = append(*threads, threadInfo)
+			}
+
 		}
 	}
 }
