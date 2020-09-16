@@ -14,7 +14,7 @@ func main() {
 		panic(err)
 	}
 
-	awaiting := jthreadparser.AwaitingNotification(&threads)
+	awaiting := jthreadparser.Synchronizers(&threads)
 	for lock, threads := range awaiting {
 		// fmt.Println
 		fmt.Printf("Lock: [%q], threads: %q\n\n", lock, threads)

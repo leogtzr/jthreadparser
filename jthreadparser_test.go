@@ -1,7 +1,6 @@
 package jthreadparser
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -973,16 +972,160 @@ func TestSynchronizers(t *testing.T) {
 		t.Error(err)
 	}
 
+	type testCase struct {
+		thread ThreadInfo
+		want   []Synchronizer
+	}
+
+	tests := []testCase{
+		testCase{
+			thread: ThreadInfo{
+				ID:       `0x00007f4948cd6000`,
+				Daemon:   true,
+				Priority: "5",
+				NativeID: `0xa360`,
+				State:    "BLOCKED",
+				Name:     `http-nio-8080-exec-1`,
+				StackTrace: `at com.thdump.calls.Call5.hello(Call5.java:9)
+- waiting to lock <0x000000060dc32098> (a java.lang.Class for com.thdump.calls.Call5)
+at com.thdump.calls.Call4.hello(Call4.java:14)
+- locked <0x000000062bac2040> (a java.lang.Class for com.thdump.calls.Call4)
+at com.thdump.calls.Call3.hello(Call3.java:14)
+- locked <0x000000062babf8a8> (a java.lang.Class for com.thdump.calls.Call3)
+at com.thdump.calls.Call2.hello(Call2.java:14)
+- locked <0x000000062babd110> (a java.lang.Class for com.thdump.calls.Call2)
+at com.thdump.calls.Call1.hello(Call1.java:14)
+- locked <0x000000062baba978> (a java.lang.Class for com.thdump.calls.Call1)
+at com.thdump.web.SlowEndpoints.hello(SlowEndpoints.java:15)
+at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(java.base@13.0.2/Native Method)
+at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(java.base@13.0.2/NativeMethodAccessorImpl.java:62)
+at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(java.base@13.0.2/DelegatingMethodAccessorImpl.java:43)
+at java.lang.reflect.Method.invoke(java.base@13.0.2/Method.java:567)
+at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:190)
+at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:138)
+at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:105)
+at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:878)
+at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:792)
+at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1040)
+at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:943)
+at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1006)
+at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:898)
+at javax.servlet.http.HttpServlet.service(HttpServlet.java:626)
+at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:883)
+at javax.servlet.http.HttpServlet.service(HttpServlet.java:733)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:231)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:53)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:119)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:119)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetricsFilter.doFilterInternal(WebMvcMetricsFilter.java:93)
+at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:119)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:119)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:202)
+at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:96)
+at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:541)
+at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:139)
+at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:92)
+at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:343)
+at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:373)
+at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:65)
+at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:868)
+at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1589)
+at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:49)
+- locked <0x000000060dc11ce0> (a org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper)
+at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@13.0.2/ThreadPoolExecutor.java:1128)
+at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@13.0.2/ThreadPoolExecutor.java:628)
+at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
+at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
+`,
+			},
+			want: []Synchronizer{
+				Synchronizer{
+					ID:         `0x000000060dc32098`,
+					ObjectName: `java.lang.Class for com.thdump.calls.Call5`,
+					State:      WaitingToLockState,
+				},
+				Synchronizer{
+					ID:         `0x000000062bac2040`,
+					ObjectName: `java.lang.Class for com.thdump.calls.Call4`,
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         `0x000000062babf8a8`,
+					ObjectName: `java.lang.Class for com.thdump.calls.Call3`,
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         `0x000000062babd110`,
+					ObjectName: `java.lang.Class for com.thdump.calls.Call2`,
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         `0x000000062baba978`,
+					ObjectName: `java.lang.Class for com.thdump.calls.Call1`,
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         `0x000000060dc11ce0`,
+					ObjectName: `org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper`,
+					State:      LockedState,
+				},
+			},
+		},
+	}
+
 	synchronizers := Synchronizers(&threads)
-	// fmt.Println(synchronizers)
-	for thread, syncs := range synchronizers {
-		if thread.Name == "http-nio-8080-exec-1" {
-			// fmt.Println(syncs)
-			fmt.Println(thread)
-			for _, sync := range syncs {
-				fmt.Println(sync)
+
+	for _, tc := range tests {
+		if got, found := synchronizers[tc.thread]; !found {
+			t.Errorf("thread -> '%q' wasn't found", got)
+		} else {
+			if !equal(got, tc.want) {
+				t.Errorf("got=[%s], want=[%s]", got, tc.want)
 			}
 		}
 	}
+
+	// for thread, syncs := range synchronizers {
+	// 	if thread.Name == "http-nio-8080-exec-1" {
+	// 		fmt.Println(thread.ID)
+	// 		fmt.Println(thread.Daemon)
+	// 		fmt.Println(thread.Priority)
+	// 		fmt.Println(thread.NativeID)
+	// 		fmt.Println(thread.State)
+	// 		fmt.Println(thread.Name)
+	// 		fmt.Printf("\n{%s}\n", thread.StackTrace)
+
+	// 		for _, sync := range syncs {
+	// 			fmt.Println(sync)
+	// 		}
+	// 	}
+	// }
+
+	// fmt.Println(synchronizers)
+	// for thread, syncs := range synchronizers {
+	// 	if thread.Name == "http-nio-8080-exec-1" {
+	// 		// fmt.Println(syncs)
+	// 		fmt.Println(thread)
+	// 		for _, sync := range syncs {
+	// 			fmt.Println(sync)
+	// 		}
+	// 	}
+	// }
 
 }
