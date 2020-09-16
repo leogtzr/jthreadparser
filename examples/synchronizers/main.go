@@ -14,22 +14,9 @@ func main() {
 		panic(err)
 	}
 
-	awaiting := jthreadparser.Synchronizers(&threads)
-	for lock, threads := range awaiting {
-		// fmt.Println
-		fmt.Printf("Lock: [%q], threads: %q\n\n", lock, threads)
+	syncs := jthreadparser.SynchronizersByThread(&threads)
+	for thread, threadSyncs := range syncs {
+		fmt.Printf("Thread [%s (%s)], synchronizers: %q\n", thread.Name, thread.ID, threadSyncs)
 	}
 
-	//for _, th := range threads {
-
-	// if th.State == "BLOCKED" {
-	// 	fmt.Println(th)
-	// }
-
-	// if th.Name == "http-nio-8080-exec-1" {
-	// 	for _, hold := range jthreadparser.HoldsForThread(&th) {
-	// 		fmt.Println(hold)
-	// 	}
-	// }
-	//}
 }
