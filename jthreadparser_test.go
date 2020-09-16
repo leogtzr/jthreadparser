@@ -1,8 +1,10 @@
 package jthreadparser
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -786,4 +788,213 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 
 func TestAwaitingNotification(t *testing.T) {
 	//
+}
+
+func TestSynchronizers(t *testing.T) {
+	// TODO: regex to capture everything ...
+
+	type testCase struct {
+		stacktrace string
+		want       []Synchronizer
+	}
+
+	tests := []testCase{
+		testCase{
+			stacktrace: `at jdk.internal.misc.Unsafe.park(java.base@13.0.2/Native Method)
+		- parking to wait for  <0x000000060dc25418> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+		at java.util.concurrent.locks.LockSupport.park(java.base@13.0.2/LockSupport.java:194)
+		at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(java.base@13.0.2/AbstractQueuedSynchronizer.java:2081)
+		at java.util.concurrent.LinkedBlockingQueue.take(java.base@13.0.2/LinkedBlockingQueue.java:433)
+		at org.apache.tomcat.util.threads.TaskQueue.take(TaskQueue.java:107)
+		at org.apache.tomcat.util.threads.TaskQueue.take(TaskQueue.java:33)
+		at java.util.concurrent.ThreadPoolExecutor.getTask(java.base@13.0.2/ThreadPoolExecutor.java:1054)
+		at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@13.0.2/ThreadPoolExecutor.java:1114)
+		at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@13.0.2/ThreadPoolExecutor.java:628)
+		at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
+		at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
+
+	Locked ownable synchronizers:
+		- None`,
+			want: []Synchronizer{
+				Synchronizer{
+					ID:         `0x000000060dc25418`,
+					ObjectName: `a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject`,
+					State:      ParkingToWaitForState,
+				},
+			},
+		},
+	}
+
+	rgxp := regexp.MustCompile(synchronizerRgx)
+
+	for _, tc := range tests {
+		for _, stackLine := range strings.Split(tc.stacktrace, "\n") {
+			if rgxp.MatchString(stackLine) {
+				// threadsWaiting = extractThreadWaiting(threadsWaiting, rgxp, stackLine, &th)
+
+				for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
+					fmt.Printf("Group length: [%d]\n", len(group))
+					for i := 0; i < len(group); i++ {
+						fmt.Printf("\t[%s]\n", group[i])
+					}
+
+					// k := Locked{group[1], group[2]}
+					// if _, exists := threadsWaiting[k]; !exists {
+					// 	threadsWaiting[k] = make([]ThreadInfo, 0)
+					// }
+					// h := threadsWaiting[k]
+					// h = append(h, *th)
+					// threadsWaiting[k] = h
+				}
+
+			}
+		}
+
+	}
+
+}
+
+func TestExtractSynchronizers(t *testing.T) {
+
+	type testCase struct {
+		stacktrace string
+		want       []Synchronizer
+	}
+
+	tests := []testCase{
+		testCase{
+			stacktrace: `at jdk.internal.misc.Unsafe.park(java.base@13.0.2/Native Method)
+		- parking to wait for  <0x000000060dc25418> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+		at java.util.concurrent.locks.LockSupport.park(java.base@13.0.2/LockSupport.java:194)
+		at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(java.base@13.0.2/AbstractQueuedSynchronizer.java:2081)
+		at java.util.concurrent.LinkedBlockingQueue.take(java.base@13.0.2/LinkedBlockingQueue.java:433)
+		at org.apache.tomcat.util.threads.TaskQueue.take(TaskQueue.java:107)
+		at org.apache.tomcat.util.threads.TaskQueue.take(TaskQueue.java:33)
+		at java.util.concurrent.ThreadPoolExecutor.getTask(java.base@13.0.2/ThreadPoolExecutor.java:1054)
+		at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@13.0.2/ThreadPoolExecutor.java:1114)
+		at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@13.0.2/ThreadPoolExecutor.java:628)
+		at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
+		at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
+
+	Locked ownable synchronizers:
+		- None`,
+			want: []Synchronizer{
+				Synchronizer{
+					ID:         `0x000000060dc25418`,
+					ObjectName: `a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject`,
+					State:      ParkingToWaitForState,
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		got := extractSynchronizers(tc.stacktrace)
+		if len(tc.want) != len(got) {
+			t.Errorf("expected=[%d] synchronizers, got=[%d]", len(tc.want), len(got))
+		}
+		fmt.Println(got)
+	}
+
+}
+
+func TestEqual(t *testing.T) {
+
+	type testCase struct {
+		a, b   []Synchronizer
+		result bool
+	}
+
+	tests := []testCase{
+		testCase{
+			a: []Synchronizer{
+				Synchronizer{
+					ID:         "a",
+					ObjectName: "o1",
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         "b",
+					ObjectName: "o1",
+					State:      ParkingToWaitForState,
+				},
+			},
+			b: []Synchronizer{
+				Synchronizer{
+					ID:         "a",
+					ObjectName: "o1",
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         "b",
+					ObjectName: "o1",
+					State:      ParkingToWaitForState,
+				},
+			},
+			result: true,
+		},
+		testCase{
+			a: []Synchronizer{},
+			b: []Synchronizer{
+				Synchronizer{
+					ID:         "a",
+					ObjectName: "o1",
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         "b",
+					ObjectName: "o2",
+					State:      ParkingToWaitForState,
+				},
+			},
+			result: false,
+		},
+		testCase{
+			a:      []Synchronizer{},
+			b:      []Synchronizer{},
+			result: true,
+		},
+	}
+
+	for _, tc := range tests {
+		if got := equal(tc.a, tc.b); got != tc.result {
+			t.Errorf("%q and %q should be equal", tc.a, tc.b)
+		}
+	}
+
+}
+
+func TestConvertToSynchronizerState(t *testing.T) {
+
+	type testCase struct {
+		textState string
+		want      SynchronizerState
+	}
+
+	tests := []testCase{
+		testCase{
+			textState: `waiting on`,
+			want:      WaitingOnState,
+		},
+		testCase{
+			textState: `parking to wait for`,
+			want:      ParkingToWaitForState,
+		},
+		testCase{
+			textState: `locked`,
+			want:      LockedState,
+		},
+		testCase{
+			textState: `abc`,
+			want:      LockedState,
+		},
+	}
+
+	for _, tc := range tests {
+		got := convertToSyncState(tc.textState)
+		if got != tc.want {
+			t.Errorf("got=[%q], want=[%q]", got, tc.want)
+		}
+	}
+
 }

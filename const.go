@@ -1,7 +1,10 @@
 package jthreadparser
 
 const (
-	LockedState           SynchronizerState = 0
+	// LockedState ...
+	LockedState SynchronizerState = 0
+	// ParkingToWaitForState ...
 	ParkingToWaitForState SynchronizerState = 1
-	WaitingToLockState    SynchronizerState = 2
+	// WaitingOnState ...
+	WaitingOnState SynchronizerState = 2
 )

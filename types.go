@@ -11,4 +11,11 @@ type Locked struct {
 	LockID, LockecObjectName string
 }
 
+// SynchronizerState ...
 type SynchronizerState int
+
+// Synchronizer ...
+type Synchronizer struct {
+	ID, ObjectName string
+	State          SynchronizerState
+}

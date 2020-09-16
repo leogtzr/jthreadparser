@@ -19,6 +19,7 @@ const (
 	runnableStateRgx            = `runnable\s{1,2}$`
 	waitingOnStateRgx           = `waiting on condition\s{1,2}$`
 	parkingOrWaitingRgx         = `\s*\- (?:waiting on|parking to wait for)\s*<(.*)>\s*\(a\s(.*)\)`
+	synchronizerRgx             = `\s*\- (waiting on|parking to wait for|locked)\s*<(.*)>\s*\(a\s(.*)\)`
 	stackTraceRgx               = `^\s+(at|\-\s).*\)$`
 	stackTraceRgxMethodName     = `at\s+(.*)$`
 	threadNameRgxGroupIndex     = 1
@@ -169,7 +170,6 @@ func parse(r io.Reader, threads *[]ThreadInfo) {
 			} else {
 				*threads = append(*threads, threadInfo)
 			}
-
 		}
 	}
 }
@@ -332,4 +332,53 @@ func hasWaitingOnState(threadHeaderLine string) bool {
 func hasThreadHeaderInformation(threadHeaderLine string) bool {
 	rgxp := regexp.MustCompile(threadHeaderInfoRgx)
 	return rgxp.MatchString(threadHeaderLine)
+}
+
+/*
+
+ */
+
+func extractSynchronizers(stacktrace string) []Synchronizer {
+	syncs := make([]Synchronizer, 0)
+
+	rgxp := regexp.MustCompile(synchronizerRgx)
+
+	for _, stackLine := range strings.Split(stacktrace, "\n") {
+		if rgxp.MatchString(stackLine) {
+			sync := Synchronizer{}
+			for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
+				sync.State = convertToSyncState(group[1])
+				sync.ID = group[2]
+				sync.ObjectName = group[3]
+			}
+			syncs = append(syncs, sync)
+		}
+	}
+
+	return syncs
+}
+
+func equal(a, b []Synchronizer) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func convertToSyncState(textState string) SynchronizerState {
+
+	if strings.Contains(textState, "waiting on") {
+		return WaitingOnState
+	} else if strings.Contains(textState, "locked") {
+		return LockedState
+	} else if strings.Contains(textState, "parking to wait for") {
+		return ParkingToWaitForState
+	}
+
+	return LockedState
 }
