@@ -1,8 +1,12 @@
 .DEFAULT_GOAL := test
 
+stringer:
+	stringer -type=SynchronizerState
+
 clean:
 	go clean
 	rm --force cp.out
+
 test:
 	go test
 

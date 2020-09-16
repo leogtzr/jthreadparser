@@ -9,25 +9,6 @@ import (
 	"strings"
 )
 
-const (
-	threadInformationBegins     = "\""
-	threadHeaderInfoRgx         = `^\"(.*).*tid=(\w*) nid=(\w*)\s\w*`
-	threadNameRgx               = `^"(.*)".*\stid=(\w*) nid=(\w*)\s\w*`
-	threadNameWithPriorityRgx   = `^"(.*)".*\sprio=(\d+).*\stid=(\w*) nid=(\w*)\s\w*`
-	stateRgx                    = `\s*java.lang.Thread.State: (.*)`
-	lockedRgx                   = `\s*\- locked\s*<(.*)>\s*\(a\s(.*)\)`
-	runnableStateRgx            = `runnable\s{1,2}$`
-	waitingOnStateRgx           = `waiting on condition\s{1,2}$`
-	parkingOrWaitingRgx         = `\s*\- (?:waiting on|parking to wait for)\s*<(.*)>\s*\(a\s(.*)\)`
-	synchronizerRgx             = `\s*\- (waiting on|parking to wait for|locked)\s*<(.*)>\s*\(a\s(.*)\)`
-	stackTraceRgx               = `^\s+(at|\-\s).*\)$`
-	stackTraceRgxMethodName     = `at\s+(.*)$`
-	threadNameRgxGroupIndex     = 1
-	threadPriorityRgxGroupIndex = 2
-	threadIDRgxGroupIndex       = 3
-	threadNativeIDRgxGroupIndex = 4
-)
-
 func (th ThreadInfo) String() string {
 	if th.Daemon {
 		return fmt.Sprintf("Thread Id: '%s' (daemon), Name: '%s', State: '%s'", th.ID, th.Name, th.State)
@@ -180,74 +161,6 @@ func ParseFrom(r io.Reader) ([]ThreadInfo, error) {
 	return threads, nil
 }
 
-// Holds ...
-func Holds(threads *[]ThreadInfo) map[ThreadInfo][]Locked {
-
-	holds := make(map[ThreadInfo][]Locked)
-	rgxp := regexp.MustCompile(lockedRgx)
-
-	for _, th := range *threads {
-		if len(th.StackTrace) == 0 || !strings.Contains(th.StackTrace, "locked") {
-			continue
-		}
-		for _, stackLine := range strings.Split(th.StackTrace, "\n") {
-			if rgxp.MatchString(stackLine) {
-				for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
-					if _, exists := holds[th]; !exists {
-						holds[th] = make([]Locked, 0)
-					}
-					h := holds[th]
-					h = append(h, Locked{group[1], group[2]})
-					holds[th] = h
-				}
-			}
-		}
-	}
-
-	return holds
-}
-
-// HoldsForThread ...
-func HoldsForThread(th *ThreadInfo) []Locked {
-	holds := make([]Locked, 0)
-
-	rgxp := regexp.MustCompile(lockedRgx)
-
-	if len(th.StackTrace) == 0 || !strings.Contains(th.StackTrace, "locked") {
-		return []Locked{}
-	}
-
-	for _, stackLine := range strings.Split(th.StackTrace, "\n") {
-		if rgxp.MatchString(stackLine) {
-			for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
-				lock := Locked{group[1], group[2]}
-				holds = append(holds, lock)
-			}
-		}
-	}
-
-	return holds
-}
-
-// AwaitingNotification ...
-func AwaitingNotification(threads *[]ThreadInfo) map[Locked][]ThreadInfo {
-	threadsWaiting := make(map[Locked][]ThreadInfo)
-
-	for _, th := range *threads {
-		if len(th.StackTrace) == 0 {
-			continue
-		}
-
-		for _, stackLine := range strings.Split(th.StackTrace, "\n") {
-			if rgxp, _ := regexp.Compile(parkingOrWaitingRgx); rgxp.MatchString(stackLine) {
-				threadsWaiting = extractThreadWaiting(threadsWaiting, rgxp, stackLine, &th)
-			}
-		}
-
-	}
-	return threadsWaiting
-}
-
 func uniqueStackTrace(threadStackTrace []string) []string {
 	u := make([]string, 0, len(threadStackTrace))
 	m := make(map[string]bool)
@@ -307,24 +220,6 @@ func IdenticalStackTrace(threads *[]ThreadInfo) map[string]int {
 	return indenticalStackTrace
 }
 
-func extractThreadWaiting(
-	threadsWaiting map[Locked][]ThreadInfo,
-	rgxp *regexp.Regexp, stackLine string,
-	th *ThreadInfo) map[Locked][]ThreadInfo {
-
-	for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
-		k := Locked{group[1], group[2]}
-		if _, exists := threadsWaiting[k]; !exists {
-			threadsWaiting[k] = make([]ThreadInfo, 0)
-		}
-		h := threadsWaiting[k]
-		h = append(h, *th)
-		threadsWaiting[k] = h
-	}
-	return threadsWaiting
-
-}
-
 func hasWaitingOnState(threadHeaderLine string) bool {
 	rgxp := regexp.MustCompile(waitingOnStateRgx)
 	return rgxp.MatchString(threadHeaderLine)
@@ -337,7 +232,6 @@ func hasThreadHeaderInformation(threadHeaderLine string) bool {
 
 func extractSynchronizers(stacktrace string) []Synchronizer {
 	syncs := make([]Synchronizer, 0)
-
 	rgxp := regexp.MustCompile(synchronizerRgx)
 
 	for _, stackLine := range strings.Split(stacktrace, "\n") {
@@ -375,7 +269,27 @@ func convertToSyncState(textState string) SynchronizerState {
 		return LockedState
 	} else if strings.Contains(textState, "parking to wait for") {
 		return ParkingToWaitForState
+	} else if strings.Contains(textState, "waiting to lock") {
+		return WaitingToLockState
 	}
 
 	return LockedState
+}
+
+// Synchronizers ....
+func Synchronizers(threads *[]ThreadInfo) map[ThreadInfo][]Synchronizer {
+	syncs := make(map[ThreadInfo][]Synchronizer)
+
+	for _, th := range *threads {
+		if len(th.StackTrace) == 0 {
+			continue
+		}
+
+		threadSyncs := extractSynchronizers(th.StackTrace)
+		if len(threadSyncs) > 0 {
+			syncs[th] = threadSyncs
+		}
+	}
+
+	return syncs
 }

@@ -1,6 +1,7 @@
 package jthreadparser
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -232,78 +233,6 @@ func TestShouldTagCorrectlyDaemonThread(t *testing.T) {
 			t.Errorf("got=[%s], expected=[%s]", tc.threadInfo.String(), tc.want)
 		}
 	}
-}
-
-func TestHolds(t *testing.T) {
-	expectedNumberOfThreads := 1
-	expectedNumberOfLocksInThread := 3
-
-	expectedLocks := []Locked{
-		Locked{LockID: "0x0000000682e5f948", LockecObjectName: "sun.security.provider.Sun"},
-		Locked{LockID: "0x00000007bc531138", LockecObjectName: "java.lang.Object"},
-		Locked{LockID: "0x00000007bbbac500", LockecObjectName: "sun.security.ssl.SSLEngineImpl"},
-	}
-
-	threads, err := ParseFrom(strings.NewReader(threadInfoWithLocks))
-	if err != nil {
-		t.Error("Error parsing thread information.")
-	}
-	holds := Holds(&threads)
-	if len(holds) != expectedNumberOfThreads {
-		t.Errorf("got=[%d], expected=[%d] for holds map length.", len(holds), expectedNumberOfThreads)
-	}
-	for _, locks := range holds {
-		if len(locks) != expectedNumberOfLocksInThread {
-			t.Errorf("It should have identified %d, got=%d", expectedNumberOfThreads, len(locks))
-		}
-		for i, lock := range locks {
-			if expectedLocks[i] != lock {
-				t.Errorf("got=[%s], expected=[%s]", lock, expectedLocks[i])
-			}
-		}
-	}
-
-}
-
-func TestHoldsForThread(t *testing.T) {
-	expectedNumberOfLocksInThreadWithLockInfo := 3
-	expectedLocks := []Locked{
-		Locked{LockID: "0x0000000682e5f948", LockecObjectName: "sun.security.provider.Sun"},
-		Locked{LockID: "0x00000007bc531138", LockecObjectName: "java.lang.Object"},
-		Locked{LockID: "0x00000007bbbac500", LockecObjectName: "sun.security.ssl.SSLEngineImpl"},
-	}
-
-	threads, err := ParseFrom(strings.NewReader(threadInfoWithLocks))
-	if err != nil {
-		t.Error("Error parsing thread information.")
-	}
-	for _, thread := range threads {
-		holds := HoldsForThread(&thread)
-		if len(holds) != expectedNumberOfLocksInThreadWithLockInfo {
-			t.Errorf("expected=[%d], got=[%d]", expectedNumberOfLocksInThreadWithLockInfo, len(holds))
-		}
-		for i, lock := range holds {
-			if expectedLocks[i] != lock {
-				t.Errorf("got=[%s], expected=[%s]", lock, expectedLocks[i])
-			}
-		}
-
-	}
-
-	// Test now with a thread having a stacktrace without locking/hold information
-	// It should return an empty slice.
-	threads, err = ParseFrom(strings.NewReader(threadInformation))
-	if err != nil {
-		t.Error("Error parsing thread information.")
-	}
-
-	for _, thread := range threads {
-		holds := HoldsForThread(&thread)
-		if len(holds) != 0 {
-			t.Errorf("Should be empty")
-		}
-	}
-
 }
 
 func TestParseFromFile(t *testing.T) {
@@ -785,11 +714,7 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 }
 
 func TestAwaitingNotification(t *testing.T) {
-	//
-}
-
-func TestSynchronizers(t *testing.T) {
-
+	// PENDING: this may be removed in the future.
 }
 
 func TestExtractSynchronizers(t *testing.T) {
@@ -843,6 +768,58 @@ func TestExtractSynchronizers(t *testing.T) {
 				Synchronizer{
 					ID:         `0x000000060dc3e3f0`,
 					ObjectName: `sun.nio.ch.EPollSelectorImpl`,
+					State:      LockedState,
+				},
+			},
+		},
+		testCase{
+			stacktrace: `	at com.thdump.calls.Call5.hello(Call5.java:9)
+			- waiting to lock <0x000000060dc32098> (a java.lang.Class for com.thdump.calls.Call5)
+			at com.thdump.calls.Call4.hello(Call4.java:14)
+			- locked <0x000000062bac2040> (a java.lang.Class for com.thdump.calls.Call4)
+			at com.thdump.calls.Call3.hello(Call3.java:14)
+			- locked <0x000000062babf8a8> (a java.lang.Class for com.thdump.calls.Call3)
+			at com.thdump.calls.Call2.hello(Call2.java:14)
+			- locked <0x000000062babd110> (a java.lang.Class for com.thdump.calls.Call2)
+			at com.thdump.calls.Call1.hello(Call1.java:14)
+			- locked <0x000000062baba978> (a java.lang.Class for com.thdump.calls.Call1)
+			at com.thdump.web.SlowEndpoints.hello(SlowEndpoints.java:15)
+			at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(java.base@13.0.2/Native Method)
+			at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:49)
+			- locked <0x000000060dc11ce0> (a org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper)
+			at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@13.0.2/ThreadPoolExecutor.java:1128)
+			at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@13.0.2/ThreadPoolExecutor.java:628)
+			at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
+			at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)`,
+			want: []Synchronizer{
+				Synchronizer{
+					ID:         `0x000000060dc32098`,
+					ObjectName: `java.lang.Class for com.thdump.calls.Call5`,
+					State:      WaitingToLockState,
+				},
+				Synchronizer{
+					ID:         `0x000000062bac2040`,
+					ObjectName: `java.lang.Class for com.thdump.calls.Call4`,
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         `0x000000062babf8a8`,
+					ObjectName: `java.lang.Class for com.thdump.calls.Call3`,
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         `0x000000062babd110`,
+					ObjectName: `java.lang.Class for com.thdump.calls.Call2`,
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         `0x000000062baba978`,
+					ObjectName: `java.lang.Class for com.thdump.calls.Call1`,
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         `0x000000060dc11ce0`,
+					ObjectName: `org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper`,
 					State:      LockedState,
 				},
 			},
@@ -985,6 +962,26 @@ func TestConvertToSynchronizerState(t *testing.T) {
 		got := convertToSyncState(tc.textState)
 		if got != tc.want {
 			t.Errorf("got=[%q], want=[%q]", got, tc.want)
+		}
+	}
+
+}
+
+func TestSynchronizers(t *testing.T) {
+	threads, err := ParseFromFile("threaddumpsamples/13.0.2.0.txt")
+	if err != nil {
+		t.Error(err)
+	}
+
+	synchronizers := Synchronizers(&threads)
+	// fmt.Println(synchronizers)
+	for thread, syncs := range synchronizers {
+		if thread.Name == "http-nio-8080-exec-1" {
+			// fmt.Println(syncs)
+			fmt.Println(thread)
+			for _, sync := range syncs {
+				fmt.Println(sync)
+			}
 		}
 	}
 
