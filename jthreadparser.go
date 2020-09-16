@@ -175,8 +175,8 @@ func uniqueStackTrace(threadStackTrace []string) []string {
 	return u
 }
 
-func extractJavaMethodNameFromStackTraceLine(stacktraceLine string) string {
-	if rgxp, _ := regexp.Compile(stackTraceRgxMethodName); rgxp.MatchString(stacktraceLine) {
+func extractJavaMethodNameFromStackTraceLine(stacktraceLine string, rgx *regexp.Regexp) string {
+	if rgx.MatchString(stacktraceLine) {
 		fields := strings.Fields(strings.TrimSpace(stacktraceLine))
 		return strings.Join(fields[1:], " ")
 	}
@@ -186,11 +186,13 @@ func extractJavaMethodNameFromStackTraceLine(stacktraceLine string) string {
 // MostUsedMethods ...
 func MostUsedMethods(threads *[]ThreadInfo) map[string]int {
 
+	rgx := regexp.MustCompile(stackTraceRgxMethodName)
+
 	mostUsedMethodsGeneral := make(map[string]int)
 	for _, th := range *threads {
 		stackTraceLines := uniqueStackTrace(strings.Split(th.StackTrace, "\n"))
 		for _, stackTraceLine := range stackTraceLines {
-			stackTraceLine = extractJavaMethodNameFromStackTraceLine(stackTraceLine)
+			stackTraceLine = extractJavaMethodNameFromStackTraceLine(stackTraceLine, rgx)
 			if stackTraceLine == "" {
 				continue
 			}
