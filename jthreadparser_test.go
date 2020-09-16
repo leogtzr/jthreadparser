@@ -1101,31 +1101,4 @@ at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 		}
 	}
 
-	// for thread, syncs := range synchronizers {
-	// 	if thread.Name == "http-nio-8080-exec-1" {
-	// 		fmt.Println(thread.ID)
-	// 		fmt.Println(thread.Daemon)
-	// 		fmt.Println(thread.Priority)
-	// 		fmt.Println(thread.NativeID)
-	// 		fmt.Println(thread.State)
-	// 		fmt.Println(thread.Name)
-	// 		fmt.Printf("\n{%s}\n", thread.StackTrace)
-
-	// 		for _, sync := range syncs {
-	// 			fmt.Println(sync)
-	// 		}
-	// 	}
-	// }
-
-	// fmt.Println(synchronizers)
-	// for thread, syncs := range synchronizers {
-	// 	if thread.Name == "http-nio-8080-exec-1" {
-	// 		// fmt.Println(syncs)
-	// 		fmt.Println(thread)
-	// 		for _, sync := range syncs {
-	// 			fmt.Println(sync)
-	// 		}
-	// 	}
-	// }
-
 }
