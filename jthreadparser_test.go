@@ -1,10 +1,8 @@
 package jthreadparser
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 )
@@ -791,66 +789,6 @@ func TestAwaitingNotification(t *testing.T) {
 }
 
 func TestSynchronizers(t *testing.T) {
-	// TODO: regex to capture everything ...
-
-	type testCase struct {
-		stacktrace string
-		want       []Synchronizer
-	}
-
-	tests := []testCase{
-		testCase{
-			stacktrace: `at jdk.internal.misc.Unsafe.park(java.base@13.0.2/Native Method)
-		- parking to wait for  <0x000000060dc25418> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
-		at java.util.concurrent.locks.LockSupport.park(java.base@13.0.2/LockSupport.java:194)
-		at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(java.base@13.0.2/AbstractQueuedSynchronizer.java:2081)
-		at java.util.concurrent.LinkedBlockingQueue.take(java.base@13.0.2/LinkedBlockingQueue.java:433)
-		at org.apache.tomcat.util.threads.TaskQueue.take(TaskQueue.java:107)
-		at org.apache.tomcat.util.threads.TaskQueue.take(TaskQueue.java:33)
-		at java.util.concurrent.ThreadPoolExecutor.getTask(java.base@13.0.2/ThreadPoolExecutor.java:1054)
-		at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@13.0.2/ThreadPoolExecutor.java:1114)
-		at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@13.0.2/ThreadPoolExecutor.java:628)
-		at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
-		at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
-
-	Locked ownable synchronizers:
-		- None`,
-			want: []Synchronizer{
-				Synchronizer{
-					ID:         `0x000000060dc25418`,
-					ObjectName: `a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject`,
-					State:      ParkingToWaitForState,
-				},
-			},
-		},
-	}
-
-	rgxp := regexp.MustCompile(synchronizerRgx)
-
-	for _, tc := range tests {
-		for _, stackLine := range strings.Split(tc.stacktrace, "\n") {
-			if rgxp.MatchString(stackLine) {
-				// threadsWaiting = extractThreadWaiting(threadsWaiting, rgxp, stackLine, &th)
-
-				for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
-					fmt.Printf("Group length: [%d]\n", len(group))
-					for i := 0; i < len(group); i++ {
-						fmt.Printf("\t[%s]\n", group[i])
-					}
-
-					// k := Locked{group[1], group[2]}
-					// if _, exists := threadsWaiting[k]; !exists {
-					// 	threadsWaiting[k] = make([]ThreadInfo, 0)
-					// }
-					// h := threadsWaiting[k]
-					// h = append(h, *th)
-					// threadsWaiting[k] = h
-				}
-
-			}
-		}
-
-	}
 
 }
 
@@ -881,8 +819,31 @@ func TestExtractSynchronizers(t *testing.T) {
 			want: []Synchronizer{
 				Synchronizer{
 					ID:         `0x000000060dc25418`,
-					ObjectName: `a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject`,
+					ObjectName: `java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject`,
 					State:      ParkingToWaitForState,
+				},
+			},
+		},
+		testCase{
+			stacktrace: `	at sun.nio.ch.EPoll.wait(java.base@13.0.2/Native Method)
+			at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@13.0.2/EPollSelectorImpl.java:120)
+			at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@13.0.2/SelectorImpl.java:124)
+			- locked <0x000000060dc3e448> (a sun.nio.ch.Util$2)
+			- locked <0x000000060dc3e3f0> (a sun.nio.ch.EPollSelectorImpl)
+			at sun.nio.ch.SelectorImpl.select(java.base@13.0.2/SelectorImpl.java:136)
+			at org.apache.tomcat.util.net.NioEndpoint$Poller.run(NioEndpoint.java:708)
+			at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
+		`,
+			want: []Synchronizer{
+				Synchronizer{
+					ID:         `0x000000060dc3e448`,
+					ObjectName: `sun.nio.ch.Util$2`,
+					State:      LockedState,
+				},
+				Synchronizer{
+					ID:         `0x000000060dc3e3f0`,
+					ObjectName: `sun.nio.ch.EPollSelectorImpl`,
+					State:      LockedState,
 				},
 			},
 		},
@@ -893,7 +854,9 @@ func TestExtractSynchronizers(t *testing.T) {
 		if len(tc.want) != len(got) {
 			t.Errorf("expected=[%d] synchronizers, got=[%d]", len(tc.want), len(got))
 		}
-		fmt.Println(got)
+		if !equal(got, tc.want) {
+			t.Errorf("got=[%q], want=[%q]", got, tc.want)
+		}
 	}
 
 }
@@ -953,6 +916,34 @@ func TestEqual(t *testing.T) {
 			a:      []Synchronizer{},
 			b:      []Synchronizer{},
 			result: true,
+		},
+		testCase{
+			a: []Synchronizer{
+				Synchronizer{
+					ID:         `x`,
+					ObjectName: `y`,
+					State:      LockedState,
+				},
+			},
+			b:      []Synchronizer{},
+			result: false,
+		},
+		testCase{
+			a: []Synchronizer{
+				Synchronizer{
+					ID:         `1`,
+					ObjectName: `2`,
+					State:      ParkingToWaitForState,
+				},
+			},
+			b: []Synchronizer{
+				Synchronizer{
+					ID:         `2`,
+					ObjectName: `3`,
+					State:      WaitingOnState,
+				},
+			},
+			result: false,
 		},
 	}
 

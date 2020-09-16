@@ -58,8 +58,7 @@ func extractThreadInfoFromLine(line string) ThreadInfo {
 
 func extractThreadState(line string) string {
 	if rgxp, _ := regexp.Compile(stateRgx); rgxp.MatchString(line) {
-		st := strings.Split(line, ":")
-		if st != nil {
+		if st := strings.Split(line, ":"); st != nil {
 			state := strings.TrimSpace(st[1])
 			return strings.Split(state, " ")[0]
 		}
@@ -185,14 +184,14 @@ func ParseFrom(r io.Reader) ([]ThreadInfo, error) {
 func Holds(threads *[]ThreadInfo) map[ThreadInfo][]Locked {
 
 	holds := make(map[ThreadInfo][]Locked)
+	rgxp := regexp.MustCompile(lockedRgx)
 
 	for _, th := range *threads {
 		if len(th.StackTrace) == 0 || !strings.Contains(th.StackTrace, "locked") {
 			continue
 		}
-
 		for _, stackLine := range strings.Split(th.StackTrace, "\n") {
-			if rgxp, _ := regexp.Compile(lockedRgx); rgxp.MatchString(stackLine) {
+			if rgxp.MatchString(stackLine) {
 				for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
 					if _, exists := holds[th]; !exists {
 						holds[th] = make([]Locked, 0)
@@ -212,12 +211,14 @@ func Holds(threads *[]ThreadInfo) map[ThreadInfo][]Locked {
 func HoldsForThread(th *ThreadInfo) []Locked {
 	holds := make([]Locked, 0)
 
+	rgxp := regexp.MustCompile(lockedRgx)
+
 	if len(th.StackTrace) == 0 || !strings.Contains(th.StackTrace, "locked") {
 		return []Locked{}
 	}
 
 	for _, stackLine := range strings.Split(th.StackTrace, "\n") {
-		if rgxp, _ := regexp.Compile(lockedRgx); rgxp.MatchString(stackLine) {
+		if rgxp.MatchString(stackLine) {
 			for _, group := range rgxp.FindAllStringSubmatch(stackLine, -1) {
 				lock := Locked{group[1], group[2]}
 				holds = append(holds, lock)
@@ -333,10 +334,6 @@ func hasThreadHeaderInformation(threadHeaderLine string) bool {
 	rgxp := regexp.MustCompile(threadHeaderInfoRgx)
 	return rgxp.MatchString(threadHeaderLine)
 }
-
-/*
-
- */
 
 func extractSynchronizers(stacktrace string) []Synchronizer {
 	syncs := make([]Synchronizer, 0)
