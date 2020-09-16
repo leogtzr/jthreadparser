@@ -11,9 +11,9 @@ import (
 
 func (th ThreadInfo) String() string {
 	if th.Daemon {
-		return fmt.Sprintf("Thread Id: '%s' (daemon), Name: '%s', State: '%s'", th.ID, th.Name, th.State)
+		return fmt.Sprintf("Thread Name: '%s' (daemon), ID: '%s', State: '%s'", th.Name, th.ID, th.State)
 	}
-	return fmt.Sprintf("Thread Id: '%s', Name: '%s', State: '%s'", th.ID, th.Name, th.State)
+	return fmt.Sprintf("Thread Name: '%s', ID: '%s', State: '%s'", th.Name, th.ID, th.State)
 }
 
 func extractThreadInfoFromLine(line string) ThreadInfo {
@@ -251,7 +251,19 @@ func extractSynchronizers(stacktrace string) []Synchronizer {
 	return syncs
 }
 
-func equal(a, b []Synchronizer) bool {
+func equalThreads(a, b []ThreadInfo) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func equalSyncs(a, b []Synchronizer) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -278,8 +290,8 @@ func convertToSyncState(textState string) SynchronizerState {
 	return LockedState
 }
 
-// Synchronizers ....
-func Synchronizers(threads *[]ThreadInfo) map[ThreadInfo][]Synchronizer {
+// SynchronizersByThread ....
+func SynchronizersByThread(threads *[]ThreadInfo) map[ThreadInfo][]Synchronizer {
 	syncs := make(map[ThreadInfo][]Synchronizer)
 
 	for _, th := range *threads {
@@ -294,4 +306,21 @@ func Synchronizers(threads *[]ThreadInfo) map[ThreadInfo][]Synchronizer {
 	}
 
 	return syncs
+}
+
+// SynchronizersByID ...
+func SynchronizersByID(threads *[]ThreadInfo) map[string][]ThreadInfo {
+	syncsByID := make(map[string][]ThreadInfo)
+
+	syncByThread := SynchronizersByThread(threads)
+
+	// TODO: change "k" and "v" names.
+	for k, v := range syncByThread {
+		for i := 0; i < len(v); i++ {
+			sync := v[i]
+			syncsByID[sync.ID] = append(syncsByID[sync.ID], k)
+		}
+	}
+
+	return syncsByID
 }

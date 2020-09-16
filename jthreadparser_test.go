@@ -217,12 +217,12 @@ func TestShouldTagCorrectlyDaemonThread(t *testing.T) {
 	tests := []testCase{
 		testCase{
 			threadInfo: ThreadInfo{ID: "0x00007f90d0106000", Name: "Attach Listener", State: "RUNNABLE", Daemon: true},
-			want:       `Thread Id: '0x00007f90d0106000' (daemon), Name: 'Attach Listener', State: 'RUNNABLE'`,
+			want:       `Thread Name: 'Attach Listener' (daemon), ID: '0x00007f90d0106000', State: 'RUNNABLE'`,
 		},
 
 		testCase{
 			threadInfo: ThreadInfo{ID: "0x00007f90d0106000", Name: "Attach Listener", State: "RUNNABLE", Daemon: false},
-			want:       `Thread Id: '0x00007f90d0106000', Name: 'Attach Listener', State: 'RUNNABLE'`,
+			want:       `Thread Name: 'Attach Listener', ID: '0x00007f90d0106000', State: 'RUNNABLE'`,
 		},
 	}
 
@@ -266,7 +266,7 @@ func TestTopMethodsInThreads(t *testing.T) {
 		want           int
 	}
 
-	threads, err := ParseFromFile("tdump.sample")
+	threads, err := ParseFromFile("threaddumpsamples/tdump.sample")
 	if err != nil {
 		t.Error("Unable to parse thread dump sample file")
 	}
@@ -308,7 +308,7 @@ at java.lang.Thread.run(Thread.java:682)`,
 		},
 	}
 
-	threads, err := ParseFromFile("tdump.sample")
+	threads, err := ParseFromFile("threaddumpsamples/tdump.sample")
 	if err != nil {
 		t.Error("Unable to parse thread dump sample file")
 	}
@@ -826,7 +826,7 @@ func TestExtractSynchronizers(t *testing.T) {
 		if len(tc.want) != len(got) {
 			t.Errorf("expected=[%d] synchronizers, got=[%d]", len(tc.want), len(got))
 		}
-		if !equal(got, tc.want) {
+		if !equalSyncs(got, tc.want) {
 			t.Errorf("got=[%q], want=[%q]", got, tc.want)
 		}
 	}
@@ -920,7 +920,7 @@ func TestEqual(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		if got := equal(tc.a, tc.b); got != tc.result {
+		if got := equalSyncs(tc.a, tc.b); got != tc.result {
 			t.Errorf("%q and %q should be equal", tc.a, tc.b)
 		}
 	}
@@ -962,7 +962,7 @@ func TestConvertToSynchronizerState(t *testing.T) {
 
 }
 
-func TestSynchronizers(t *testing.T) {
+func TestSynchronizersByThread(t *testing.T) {
 	threads, err := ParseFromFile("threaddumpsamples/13.0.2.0.txt")
 	if err != nil {
 		t.Error(err)
@@ -1085,16 +1085,177 @@ at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 		},
 	}
 
-	synchronizers := Synchronizers(&threads)
+	synchronizers := SynchronizersByThread(&threads)
 
 	for _, tc := range tests {
 		if got, found := synchronizers[tc.thread]; !found {
 			t.Errorf("thread -> '%q' wasn't found", got)
 		} else {
-			if !equal(got, tc.want) {
+			if !equalSyncs(got, tc.want) {
 				t.Errorf("got=[%s], want=[%s]", got, tc.want)
 			}
 		}
 	}
 
+}
+
+func TestSynchronizersByID(t *testing.T) {
+
+	type testCase struct {
+		ID   string
+		want []ThreadInfo
+	}
+
+	threads, err := ParseFromFile("threaddumpsamples/13.0.2.0.txt")
+	if err != nil {
+		t.Error(err)
+	}
+
+	tests := []testCase{
+		testCase{
+			ID: `0x000000060dc32098`,
+			want: []ThreadInfo{
+				ThreadInfo{
+					Name:     `scheduling-1`,
+					ID:       `0x00007f494899a800`,
+					NativeID: `0xa36c`,
+					Daemon:   false,
+					Priority: "5",
+					State:    "TIMED_WAITING",
+					StackTrace: `at java.lang.Thread.sleep(java.base@13.0.2/Native Method)
+at com.thdump.calls.CallResult.hello(CallResult.java:14)
+- locked <0x000000060dc31e60> (a java.lang.Class for com.thdump.calls.CallResult)
+at com.thdump.calls.Call9.hello(Call9.java:14)
+- locked <0x000000060dc31ed8> (a java.lang.Class for com.thdump.calls.Call9)
+at com.thdump.calls.Call8.hello(Call8.java:14)
+- locked <0x000000060dc31f48> (a java.lang.Class for com.thdump.calls.Call8)
+at com.thdump.calls.Call7.hello(Call7.java:14)
+- locked <0x000000060dc31fb8> (a java.lang.Class for com.thdump.calls.Call7)
+at com.thdump.calls.Call6.hello(Call6.java:14)
+- locked <0x000000060dc32028> (a java.lang.Class for com.thdump.calls.Call6)
+at com.thdump.calls.Call5.hello(Call5.java:14)
+- locked <0x000000060dc32098> (a java.lang.Class for com.thdump.calls.Call5)
+at com.thdump.tasks.ScheduledTask.printHelloWithTime(ScheduledTask.java:24)
+at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(java.base@13.0.2/Native Method)
+at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(java.base@13.0.2/NativeMethodAccessorImpl.java:62)
+at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(java.base@13.0.2/DelegatingMethodAccessorImpl.java:43)
+at java.lang.reflect.Method.invoke(java.base@13.0.2/Method.java:567)
+at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:84)
+at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54)
+at java.util.concurrent.Executors$RunnableAdapter.call(java.base@13.0.2/Executors.java:515)
+at java.util.concurrent.FutureTask.runAndReset(java.base@13.0.2/FutureTask.java:305)
+at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(java.base@13.0.2/ScheduledThreadPoolExecutor.java:305)
+at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@13.0.2/ThreadPoolExecutor.java:1128)
+at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@13.0.2/ThreadPoolExecutor.java:628)
+at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
+`,
+				},
+				ThreadInfo{
+					ID:       `0x00007f4948cd6000`,
+					Daemon:   true,
+					Priority: "5",
+					NativeID: `0xa360`,
+					State:    `BLOCKED`,
+					Name:     `http-nio-8080-exec-1`,
+					StackTrace: `at com.thdump.calls.Call5.hello(Call5.java:9)
+- waiting to lock <0x000000060dc32098> (a java.lang.Class for com.thdump.calls.Call5)
+at com.thdump.calls.Call4.hello(Call4.java:14)
+- locked <0x000000062bac2040> (a java.lang.Class for com.thdump.calls.Call4)
+at com.thdump.calls.Call3.hello(Call3.java:14)
+- locked <0x000000062babf8a8> (a java.lang.Class for com.thdump.calls.Call3)
+at com.thdump.calls.Call2.hello(Call2.java:14)
+- locked <0x000000062babd110> (a java.lang.Class for com.thdump.calls.Call2)
+at com.thdump.calls.Call1.hello(Call1.java:14)
+- locked <0x000000062baba978> (a java.lang.Class for com.thdump.calls.Call1)
+at com.thdump.web.SlowEndpoints.hello(SlowEndpoints.java:15)
+at jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(java.base@13.0.2/Native Method)
+at jdk.internal.reflect.NativeMethodAccessorImpl.invoke(java.base@13.0.2/NativeMethodAccessorImpl.java:62)
+at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(java.base@13.0.2/DelegatingMethodAccessorImpl.java:43)
+at java.lang.reflect.Method.invoke(java.base@13.0.2/Method.java:567)
+at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:190)
+at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:138)
+at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:105)
+at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:878)
+at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:792)
+at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1040)
+at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:943)
+at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1006)
+at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:898)
+at javax.servlet.http.HttpServlet.service(HttpServlet.java:626)
+at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:883)
+at javax.servlet.http.HttpServlet.service(HttpServlet.java:733)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:231)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:53)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:119)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:119)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetricsFilter.doFilterInternal(WebMvcMetricsFilter.java:93)
+at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:119)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:119)
+at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:202)
+at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:96)
+at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:541)
+at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:139)
+at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:92)
+at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:343)
+at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:373)
+at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:65)
+at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:868)
+at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1589)
+at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:49)
+- locked <0x000000060dc11ce0> (a org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper)
+at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@13.0.2/ThreadPoolExecutor.java:1128)
+at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@13.0.2/ThreadPoolExecutor.java:628)
+at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
+at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
+`,
+				},
+			},
+		},
+	}
+
+	syncs := SynchronizersByID(&threads)
+
+	for _, tc := range tests {
+		got := syncs[tc.ID]
+
+		if len(got) != len(tc.want) {
+			t.Errorf("got=[%s], want=[%s]", got, tc.want)
+		}
+
+		for _, th := range tc.want {
+			if !isIn(&th, &got) {
+				t.Errorf("thread: %s not found in %s", th, got)
+			}
+		}
+	}
+
+}
+
+func isIn(thread *ThreadInfo, threads *[]ThreadInfo) bool {
+	found := false
+
+	for _, th := range *threads {
+		if th == *thread {
+			found = true
+			break
+		}
+	}
+
+	return found
 }
