@@ -314,11 +314,10 @@ func SynchronizersByID(threads *[]ThreadInfo) map[string][]ThreadInfo {
 
 	syncByThread := SynchronizersByThread(threads)
 
-	// TODO: change "k" and "v" names.
-	for k, v := range syncByThread {
-		for i := 0; i < len(v); i++ {
-			sync := v[i]
-			syncsByID[sync.ID] = append(syncsByID[sync.ID], k)
+	for thread, syncs := range syncByThread {
+		for i := 0; i < len(syncs); i++ {
+			sync := syncs[i]
+			syncsByID[sync.ID] = append(syncsByID[sync.ID], thread)
 		}
 	}
 

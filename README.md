@@ -21,14 +21,36 @@ for _, th := range threads {
 To get information about which threads are waiting on what you can use the AwaitingNotification() method:
 
 ```go
-threadsWaiting := jthreadparser.AwaitingNotification(&threads)
-for k, v := range threadsWaiting {
-    fmt.Printf("%d threads waiting for notification on lock %s\n", len(v), k.LockID)
-    for _, threadWaiting := range v {
-        fmt.Println("\t", threadWaiting.Name)
-    }
-    fmt.Println()
+threadDumpFile := "../../threaddumpsamples/13.0.2.0.txt"
+
+threads, err := jthreadparser.ParseFromFile(threadDumpFile)
+if err != nil {
+    panic(err)
 }
+
+syncs := jthreadparser.SynchronizersByThread(&threads)
+for thread, threadSyncs := range syncs {
+    fmt.Printf("Thread [%s (%s)], synchronizers: %q\n", thread.Name, thread.ID, threadSyncs)
+}
+```
+
+#### Output
+```
+...
+Thread [http-nio-8080-exec-10 (0x00007f49484d4000)]
+	{0x000000060dc25418 java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject ParkingToWaitForState}
+Thread [Catalina-utility-1 (0x00007f4948d87000)]
+	{0x000000060cf0ffc0 java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject ParkingToWaitForState}
+Thread [http-nio-8080-BlockPoller (0x00007f4948f82000)]
+	{0x000000060dc19118 sun.nio.ch.Util$2 LockedState}
+	{0x000000060dc190c0 sun.nio.ch.EPollSelectorImpl LockedState}
+Thread [scheduling-1 (0x00007f494899a800)]
+	{0x000000060dc31e60 java.lang.Class for com.thdump.calls.CallResult LockedState}
+	{0x000000060dc31ed8 java.lang.Class for com.thdump.calls.Call9 LockedState}
+	{0x000000060dc31f48 java.lang.Class for com.thdump.calls.Call8 LockedState}
+	{0x000000060dc31fb8 java.lang.Class for com.thdump.calls.Call7 LockedState}
+	{0x000000060dc32028 java.lang.Class for com.thdump.calls.Call6 LockedState}
+	{0x000000060dc32098 java.lang.Class for com.thdump.calls.Call5 LockedState}
 ```
 
 ### Most Used Methods

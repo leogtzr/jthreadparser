@@ -16,7 +16,10 @@ func main() {
 
 	syncs := jthreadparser.SynchronizersByThread(&threads)
 	for thread, threadSyncs := range syncs {
-		fmt.Printf("Thread [%s (%s)], synchronizers: %q\n", thread.Name, thread.ID, threadSyncs)
+		fmt.Printf("Thread [%s (%s)]\n", thread.Name, thread.ID)
+		for _, s := range threadSyncs {
+			fmt.Printf("\t%s\n", s)
+		}
 	}
 
 }
