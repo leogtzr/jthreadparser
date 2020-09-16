@@ -18,7 +18,7 @@ for _, th := range threads {
 
 ### Synchronizers
 
-To get information about which threads are waiting on what (synchronizer states) you can use the SynchronizersByThread() method:
+To get information about which threads are waiting on what (synchronizer states) you can use the *SynchronizersByThread()* method:
 
 ```go
 threadDumpFile := "../../threaddumpsamples/13.0.2.0.txt"
