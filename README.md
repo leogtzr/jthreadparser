@@ -34,6 +34,8 @@ for thread, threadSyncs := range syncs {
 }
 ```
 
+![ims](imgs/synchronizers1.png)
+
 #### Output
 ```
 ...
