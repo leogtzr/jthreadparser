@@ -37,7 +37,7 @@ for thread, threadSyncs := range syncs {
 ![ims](imgs/synchronizers1.png)
 
 #### Output
-```
+<pre>
 ...
 Thread [scheduling-1 (0x00007f494899a800)]
 	{0x000000060dc31e60 java.lang.Class for com.thdump.calls.CallResult LockedState}
@@ -45,21 +45,21 @@ Thread [scheduling-1 (0x00007f494899a800)]
 	{0x000000060dc31f48 java.lang.Class for com.thdump.calls.Call8 LockedState}
 	{0x000000060dc31fb8 java.lang.Class for com.thdump.calls.Call7 LockedState}
 	{0x000000060dc32028 java.lang.Class for com.thdump.calls.Call6 LockedState}
-	{0x000000060dc32098 java.lang.Class for com.thdump.calls.Call5 LockedState}
+	{<b>0x000000060dc32098</b> java.lang.Class for com.thdump.calls.Call5 <b>LockedState</b>}
 ...
 Thread [http-nio-8080-exec-1 (0x00007f4948cd6000)]
-	{0x000000060dc32098 java.lang.Class for com.thdump.calls.Call5 WaitingToLockState}
+	{<b>0x000000060dc32098</b> java.lang.Class for com.thdump.calls.Call5 <b>WaitingToLockState</b>}
 	{0x000000062bac2040 java.lang.Class for com.thdump.calls.Call4 LockedState}
 	{0x000000062babf8a8 java.lang.Class for com.thdump.calls.Call3 LockedState}
 	{0x000000062babd110 java.lang.Class for com.thdump.calls.Call2 LockedState}
-	{0x000000062baba978 java.lang.Class for com.thdump.calls.Call1 LockedState}
+	{<b>0x000000062baba978</b> java.lang.Class for com.thdump.calls.Call1 <b>LockedState</b>}
 	{0x000000060dc11ce0 org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper LockedState}
 ...
 Thread [http-nio-8080-exec-2 (0x00007f494983e800)]
-	{0x000000062baba978 java.lang.Class for com.thdump.calls.Call1 WaitingToLockState}
+	{<b>0x000000062baba978</b> java.lang.Class for com.thdump.calls.Call1 <b>WaitingToLockState</b>}
 	{0x000000062bb035b8 org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper LockedState}
 ...
-```
+</pre>
 
 ### Most Used Methods
 
