@@ -155,10 +155,10 @@ func parse(r io.Reader, threads *[]ThreadInfo) {
 }
 
 // ParseFrom ...
-func ParseFrom(r io.Reader) ([]ThreadInfo, error) {
+func ParseFrom(r io.Reader) []ThreadInfo {
 	threads := make([]ThreadInfo, 0)
 	parse(r, &threads)
-	return threads, nil
+	return threads
 }
 
 func uniqueStackTrace(threadStackTrace []string) []string {

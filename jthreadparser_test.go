@@ -195,10 +195,7 @@ func TestExtractThreadState(t *testing.T) {
 }
 
 func TestShouldIdentifyDaemonThread(t *testing.T) {
-	threads, err := ParseFrom(strings.NewReader(daemonThreadInformation))
-	if err != nil {
-		t.Error("Error parsing daemon thread")
-	}
+	threads := ParseFrom(strings.NewReader(daemonThreadInformation))
 	if len(threads) != 1 {
 		t.Error("Error parsing single daemon thread dump")
 	}
