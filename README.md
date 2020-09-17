@@ -16,6 +16,22 @@ for _, th := range threads {
 }
 ```
 
+Above code will help you to get this information from a thread dump file:
+
+![threaddumpsample](imgs/threaddumpsimpleusage.png)
+
+#### Output
+
+<pre>
+'Attach Listener' (0x00007f321c001000) (0x5ac6) [RUNNABLE]
+'DestroyJavaVM' (0x00007f32b4012000) (0x5934) [RUNNABLE]
+'scheduling-1' (0x00007f32b556c000) (0x596c) [TIMED_WAITING]
+'http-nio-8080-Acceptor' (0x00007f32b53d7000) (0x596b) [RUNNABLE]
+'http-nio-8080-ClientPoller' (0x00007f32b53f1000) (0x596a) [RUNNABLE]
+</pre>
+
+
+
 ### Synchronizers
 
 To get information about which threads are waiting on what (synchronizer states) you can use the *SynchronizersByThread()* method:
