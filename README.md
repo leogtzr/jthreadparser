@@ -39,7 +39,7 @@ for thread, threadSyncs := range syncs {
 #### Output
 <pre>
 ...
-Thread [scheduling-1 (0x00007f494899a800)]
+Thread [<b>scheduling-1</b> (0x00007f494899a800)]
 	{0x000000060dc31e60 java.lang.Class for com.thdump.calls.CallResult LockedState}
 	{0x000000060dc31ed8 java.lang.Class for com.thdump.calls.Call9 LockedState}
 	{0x000000060dc31f48 java.lang.Class for com.thdump.calls.Call8 LockedState}
@@ -47,7 +47,7 @@ Thread [scheduling-1 (0x00007f494899a800)]
 	{0x000000060dc32028 java.lang.Class for com.thdump.calls.Call6 LockedState}
 	{<b>0x000000060dc32098</b> java.lang.Class for com.thdump.calls.Call5 <b>LockedState</b>}
 ...
-Thread [http-nio-8080-exec-1 (0x00007f4948cd6000)]
+Thread [<b>http-nio-8080-exec-1</b> (0x00007f4948cd6000)]
 	{<b>0x000000060dc32098</b> java.lang.Class for com.thdump.calls.Call5 <b>WaitingToLockState</b>}
 	{0x000000062bac2040 java.lang.Class for com.thdump.calls.Call4 LockedState}
 	{0x000000062babf8a8 java.lang.Class for com.thdump.calls.Call3 LockedState}
@@ -55,7 +55,7 @@ Thread [http-nio-8080-exec-1 (0x00007f4948cd6000)]
 	{<b>0x000000062baba978</b> java.lang.Class for com.thdump.calls.Call1 <b>LockedState</b>}
 	{0x000000060dc11ce0 org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper LockedState}
 ...
-Thread [http-nio-8080-exec-2 (0x00007f494983e800)]
+Thread [<b>http-nio-8080-exec-2</b> (0x00007f494983e800)]
 	{<b>0x000000062baba978</b> java.lang.Class for com.thdump.calls.Call1 <b>WaitingToLockState</b>}
 	{0x000000062bb035b8 org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper LockedState}
 ...
