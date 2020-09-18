@@ -77,6 +77,21 @@ Thread [<b>http-nio-8080-exec-2</b> (0x00007f494983e800)]
 ...
 </pre>
 
+### Reading from stdin
+
+You can read from standard input with the **ParseFrom(X)**:
+
+```Go
+threads, err := jthreadparser.ParseFrom(os.Stdin)
+```
+
+```bash
+jstack -l PID | go run myprogram.go
+```
+
+<pre>
+</pre>
+
 ### Most Used Methods
 
 You can check how many threads include a specific Method using the MostUsedMethods() function:
