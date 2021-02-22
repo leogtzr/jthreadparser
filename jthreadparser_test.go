@@ -176,11 +176,11 @@ func TestExtractThreadState(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			threadStateLine: `   java.lang.Thread.State: BLOCKED (on object monitor)`,
 			want:            "BLOCKED",
 		},
-		testCase{
+		{
 			threadStateLine: `java.lang.Thread.State: TIMED_WAITING (on object monitor)`,
 			want:            `TIMED_WAITING`,
 		},
@@ -195,11 +195,11 @@ func TestExtractThreadState(t *testing.T) {
 }
 
 func TestShouldIdentifyDaemonThread(t *testing.T) {
-	threads := ParseFrom(strings.NewReader(daemonThreadInformation))
-	if len(threads) != 1 {
+	threadDump := ParseFrom(strings.NewReader(daemonThreadInformation))
+	if len(threadDump.Threads) != 1 {
 		t.Error("Error parsing single daemon thread dump")
 	}
-	if !threads[0].Daemon {
+	if !threadDump.Threads[0].Daemon {
 		t.Error("Thread should be daemon")
 	}
 }
@@ -212,12 +212,11 @@ func TestShouldTagCorrectlyDaemonThread(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			threadInfo: ThreadInfo{ID: "0x00007f90d0106000", Name: "Attach Listener", State: "RUNNABLE", Daemon: true},
 			want:       `Thread Name: 'Attach Listener' (daemon), ID: '0x00007f90d0106000', State: 'RUNNABLE'`,
 		},
-
-		testCase{
+		{
 			threadInfo: ThreadInfo{ID: "0x00007f90d0106000", Name: "Attach Listener", State: "RUNNABLE", Daemon: false},
 			want:       `Thread Name: 'Attach Listener', ID: '0x00007f90d0106000', State: 'RUNNABLE'`,
 		},
@@ -244,15 +243,15 @@ func TestParseFromFile(t *testing.T) {
 	}
 
 	expectedNumberOfThreadsInSample := 3
-	threads, err := ParseFromFile(file.Name())
+	threadDump, err := ParseFromFile(file.Name())
 
-	if len(threads) != expectedNumberOfThreadsInSample {
-		t.Errorf("got=[%d], expected=[%d]", len(threads), expectedNumberOfThreadsInSample)
+	if len(threadDump.Threads) != expectedNumberOfThreadsInSample {
+		t.Errorf("got=[%d], expected=[%d]", len(threadDump.Threads), expectedNumberOfThreadsInSample)
 	}
 
-	threads, err = ParseFromFile("does_not_exist...")
-	if threads != nil {
-		t.Errorf("got=[%q], expected a nil reference", threads)
+	_, err = ParseFromFile("does_not_exist...")
+	if err == nil {
+		t.Error("there should have been an error")
 	}
 }
 
@@ -263,20 +262,20 @@ func TestTopMethodsInThreads(t *testing.T) {
 		want           int
 	}
 
-	threads, err := ParseFromFile("threaddumpsamples/tdump.sample")
+	threadDump, err := ParseFromFile("threaddumpsamples/tdump.sample")
 	if err != nil {
 		t.Error("Unable to parse thread dump sample file")
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			javaMethodName: "java.lang.Object.wait(Native Method)",
 			want:           82,
 		},
 	}
 
 	for _, tc := range tests {
-		got := MostUsedMethods(&threads)
+		got := MostUsedMethods(&threadDump.Threads)
 		if got[tc.javaMethodName] != tc.want {
 			t.Errorf("Should have identified %d threads, got=%d", tc.want, got[tc.javaMethodName])
 		}
@@ -292,7 +291,7 @@ func TestIdenticalStrackTrace(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			stacktrace: `at sun.misc.Unsafe.park(Native Method)
 - parking to wait for  <0x0000000750785368> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
 at java.util.concurrent.locks.LockSupport.park(LockSupport.java:156)
@@ -305,19 +304,18 @@ at java.lang.Thread.run(Thread.java:682)`,
 		},
 	}
 
-	threads, err := ParseFromFile("threaddumpsamples/tdump.sample")
+	threadDump, err := ParseFromFile("threaddumpsamples/tdump.sample")
 	if err != nil {
 		t.Error("Unable to parse thread dump sample file")
 	}
 
 	for _, tc := range tests {
-		got := IdenticalStackTrace(&threads)
+		got := IdenticalStackTrace(&threadDump.Threads)
 		if got[tc.stacktrace] != tc.want {
 			t.Errorf("Should have identified %d (got=%d) threads with the following stacktrace:\n%s\nEND",
 				tc.want, got[tc.stacktrace], tc.stacktrace)
 		}
 	}
-
 }
 
 func TestVerifyNumberOfThreadsInSamples(t *testing.T) {
@@ -369,15 +367,14 @@ func TestVerifyNumberOfThreadsInSamples(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		threads, err := ParseFromFile(tc.sampleFileName)
+		threadDump, err := ParseFromFile(tc.sampleFileName)
 		if err != nil {
 			t.Error(err)
 		}
-		if len(threads) != tc.want {
-			t.Errorf("got=[%d], want=[%d]", len(threads), tc.want)
+		if len(threadDump.Threads) != tc.want {
+			t.Errorf("got=[%d], want=[%d]", len(threadDump.Threads), tc.want)
 		}
 	}
-
 }
 
 func TestNoThreadDumpFile(t *testing.T) {
@@ -392,13 +389,13 @@ func TestNoThreadDumpFile(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		threads, err := ParseFromFile(tc.sampleFileName)
+		threadDump, err := ParseFromFile(tc.sampleFileName)
 		if err != nil {
 			t.Error(err)
 		}
 
-		if len(threads) != tc.want {
-			t.Errorf("got=[%d], want=[%d]", len(threads), tc.want)
+		if len(threadDump.Threads) != tc.want {
+			t.Errorf("got=[%d], want=[%d]", len(threadDump.Threads), tc.want)
 		}
 	}
 
@@ -412,11 +409,11 @@ func TestHasRunnableState(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			threadHeaderLine: `GC Thread#3" os_prio=0 cpu=21.13ms elapsed=146.91s tid=0x00007f1914004000 nid=0xb08d runnable  `,
 			want:             true,
 		},
-		testCase{
+		{
 			threadHeaderLine: `"Finalizer" #3 daemon prio=8 os_prio=0 cpu=0.77ms elapsed=741.83s tid=0x00007f6f5c29e000 nid=0x6b90 in Object.wait()  [0x00007f6f13ffe000]`,
 			want:             false,
 		},
@@ -438,11 +435,11 @@ func TestWaitingOnConditionState(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			threadHeaderLine: `"VM Periodic Task Thread" os_prio=0 tid=0x00007f74bc22d800 nid=0xd9c4 waiting on condition `,
 			want:             true,
 		},
-		testCase{
+		{
 			threadHeaderLine: `"Finalizer" #3 daemon prio=8 os_prio=0 cpu=0.77ms elapsed=741.83s tid=0x00007f6f5c29e000 nid=0x6b90 in Object.wait()  [0x00007f6f13ffe000]`,
 			want:             false,
 		},
@@ -463,19 +460,19 @@ func TestHasThreadHeaderInformation(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			threadHeader: `"VM Thread" os_prio=0 cpu=235.82ms elapsed=147.51s tid=0x00007f904819cef0 nid=0xbfd2 runnable`,
 			want:         true,
 		},
-		testCase{
+		{
 			threadHeader: `"http-nio-8080-exec-8" #27 daemon prio=5 os_prio=0 cpu=1.67ms elapsed=144.34s tid=0x00007f9049128ec0 nid=0xc03f waiting for monitor entry  [0x00007f8faf0f0000]`,
 			want:         true,
 		},
-		testCase{
+		{
 			threadHeader: `"OPPORTUNITY"`,
 			want:         false,
 		},
-		testCase{
+		{
 			threadHeader: `Hello!`,
 			want:         false,
 		},
@@ -492,14 +489,14 @@ func TestHasThreadHeaderInformation(t *testing.T) {
 
 func TestCheckThreadInfo(t *testing.T) {
 
-	threads, err := ParseFromFile("threaddumpsamples/9.0.4.0-test.txt")
+	threadDump, err := ParseFromFile("threaddumpsamples/9.0.4.0-test.txt")
 	if err != nil {
 		t.Error(err)
 	}
 
 	const expectedNumberOfThreadsInSampleFile = 5
-	if len(threads) != expectedNumberOfThreadsInSampleFile {
-		t.Errorf("got=[%d] threads, expected=[%d]", len(threads), expectedNumberOfThreadsInSampleFile)
+	if len(threadDump.Threads) != expectedNumberOfThreadsInSampleFile {
+		t.Errorf("got=[%d] threads, expected=[%d]", len(threadDump.Threads), expectedNumberOfThreadsInSampleFile)
 	}
 
 	type testCase struct {
@@ -511,35 +508,35 @@ func TestCheckThreadInfo(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			threadName: `Attach Listener`,
 			isDaemon:   true,
 			threadID:   `0x00007f321c001000`,
 			nativeID:   `0x5ac6`,
 			state:      `RUNNABLE`,
 		},
-		testCase{
+		{
 			threadName: `DestroyJavaVM`,
 			isDaemon:   false,
 			threadID:   `0x00007f32b4012000`,
 			nativeID:   `0x5934`,
 			state:      `RUNNABLE`,
 		},
-		testCase{
+		{
 			threadName: `scheduling-1`,
 			isDaemon:   false,
 			threadID:   `0x00007f32b556c000`,
 			nativeID:   `0x596c`,
 			state:      `TIMED_WAITING`,
 		},
-		testCase{
+		{
 			threadName: `http-nio-8080-Acceptor`,
 			isDaemon:   true,
 			threadID:   `0x00007f32b53d7000`,
 			nativeID:   `0x596b`,
 			state:      `RUNNABLE`,
 		},
-		testCase{
+		{
 			threadName: `http-nio-8080-ClientPoller`,
 			isDaemon:   true,
 			threadID:   `0x00007f32b53f1000`,
@@ -549,7 +546,7 @@ func TestCheckThreadInfo(t *testing.T) {
 	}
 
 	for i := 0; i < expectedNumberOfThreadsInSampleFile; i++ {
-		got := threads[i]
+		got := threadDump.Threads[i]
 		if got.Name != tests[i].threadName {
 			t.Errorf("got=[%s], expected=[%s]", got.Name, tests[i].threadName)
 		}
@@ -574,15 +571,14 @@ func TestCheckThreadInfo(t *testing.T) {
 }
 
 func TestCheckThreadInfo2(t *testing.T) {
-
-	threads, err := ParseFromFile("threaddumpsamples/14.0.1.1-together.txt")
+	threadDump, err := ParseFromFile("threaddumpsamples/14.0.1.1-together.txt")
 	if err != nil {
 		t.Error(err)
 	}
 
 	const expectedNumberOfThreadsInSampleFile = 9
-	if len(threads) != expectedNumberOfThreadsInSampleFile {
-		t.Errorf("got=[%d] threads, expected=[%d]", len(threads), expectedNumberOfThreadsInSampleFile)
+	if len(threadDump.Threads) != expectedNumberOfThreadsInSampleFile {
+		t.Errorf("got=[%d] threads, expected=[%d]", len(threadDump.Threads), expectedNumberOfThreadsInSampleFile)
 	}
 
 	type testCase struct {
@@ -595,7 +591,7 @@ func TestCheckThreadInfo2(t *testing.T) {
 	}
 
 	test := []testCase{
-		testCase{
+		{
 			threadName: `Reference Handler`,
 			isDaemon:   true,
 			threadID:   `0x00007f195c29c000`,
@@ -606,8 +602,7 @@ at java.lang.ref.Reference.processPendingReferences(java.base@14.0.1/Reference.j
 at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:213)
 `,
 		},
-
-		testCase{
+		{
 			threadName: `VM Thread`,
 			isDaemon:   false,
 			threadID:   `0x00007f195c299000`,
@@ -615,8 +610,7 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 			state:      `runnable`,
 			stackTrace: ``,
 		},
-
-		testCase{
+		{
 			threadName: `GC Thread#7`,
 			isDaemon:   false,
 			threadID:   `0x00007f191400a800`,
@@ -624,8 +618,7 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 			state:      `runnable`,
 			stackTrace: ``,
 		},
-
-		testCase{
+		{
 			threadName: `G1 Main Marker`,
 			isDaemon:   false,
 			threadID:   `0x00007f195c08c000`,
@@ -633,8 +626,7 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 			state:      `runnable`,
 			stackTrace: ``,
 		},
-
-		testCase{
+		{
 			threadName: `G1 Conc#0`,
 			isDaemon:   false,
 			threadID:   `0x00007f195c08d800`,
@@ -642,8 +634,7 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 			state:      `runnable`,
 			stackTrace: ``,
 		},
-
-		testCase{
+		{
 			threadName: `G1 Conc#1`,
 			isDaemon:   false,
 			threadID:   `0x00007f1924001000`,
@@ -651,8 +642,7 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 			state:      `runnable`,
 			stackTrace: ``,
 		},
-
-		testCase{
+		{
 			threadName: `G1 Refine#0`,
 			isDaemon:   false,
 			threadID:   `0x00007f195c20c000`,
@@ -660,8 +650,7 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 			state:      `runnable`,
 			stackTrace: ``,
 		},
-
-		testCase{
+		{
 			threadName: `G1 Young RemSet Sampling`,
 			isDaemon:   false,
 			threadID:   `0x00007f195c20d800`,
@@ -669,8 +658,7 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 			state:      `runnable`,
 			stackTrace: ``,
 		},
-
-		testCase{
+		{
 			threadName: `VM Periodic Task Thread`,
 			isDaemon:   false,
 			threadID:   `0x00007f195c30f000`,
@@ -681,7 +669,7 @@ at java.lang.ref.Reference$ReferenceHandler.run(java.base@14.0.1/Reference.java:
 	}
 
 	for i := 0; i < expectedNumberOfThreadsInSampleFile; i++ {
-		got := threads[i]
+		got := threadDump.Threads[i]
 		if got.Name != test[i].threadName {
 			t.Errorf("got=[%s], want=[%s]", got.Name, test[i].threadName)
 		}
@@ -717,7 +705,7 @@ func TestExtractSynchronizers(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			stacktrace: `at jdk.internal.misc.Unsafe.park(java.base@13.0.2/Native Method)
 		- parking to wait for  <0x000000060dc25418> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
 		at java.util.concurrent.locks.LockSupport.park(java.base@13.0.2/LockSupport.java:194)
@@ -734,14 +722,14 @@ func TestExtractSynchronizers(t *testing.T) {
 	Locked ownable synchronizers:
 		- None`,
 			want: []Synchronizer{
-				Synchronizer{
+				{
 					ID:         `0x000000060dc25418`,
 					ObjectName: `java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject`,
 					State:      ParkingToWaitForState,
 				},
 			},
 		},
-		testCase{
+		{
 			stacktrace: `	at sun.nio.ch.EPoll.wait(java.base@13.0.2/Native Method)
 			at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@13.0.2/EPollSelectorImpl.java:120)
 			at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@13.0.2/SelectorImpl.java:124)
@@ -752,19 +740,19 @@ func TestExtractSynchronizers(t *testing.T) {
 			at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 		`,
 			want: []Synchronizer{
-				Synchronizer{
+				{
 					ID:         `0x000000060dc3e448`,
 					ObjectName: `sun.nio.ch.Util$2`,
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000060dc3e3f0`,
 					ObjectName: `sun.nio.ch.EPollSelectorImpl`,
 					State:      LockedState,
 				},
 			},
 		},
-		testCase{
+		{
 			stacktrace: `	at com.thdump.calls.Call5.hello(Call5.java:9)
 			- waiting to lock <0x000000060dc32098> (a java.lang.Class for com.thdump.calls.Call5)
 			at com.thdump.calls.Call4.hello(Call4.java:14)
@@ -784,32 +772,32 @@ func TestExtractSynchronizers(t *testing.T) {
 			at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
 			at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)`,
 			want: []Synchronizer{
-				Synchronizer{
+				{
 					ID:         `0x000000060dc32098`,
 					ObjectName: `java.lang.Class for com.thdump.calls.Call5`,
 					State:      WaitingToLockState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000062bac2040`,
 					ObjectName: `java.lang.Class for com.thdump.calls.Call4`,
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000062babf8a8`,
 					ObjectName: `java.lang.Class for com.thdump.calls.Call3`,
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000062babd110`,
 					ObjectName: `java.lang.Class for com.thdump.calls.Call2`,
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000062baba978`,
 					ObjectName: `java.lang.Class for com.thdump.calls.Call1`,
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000060dc11ce0`,
 					ObjectName: `org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper`,
 					State:      LockedState,
@@ -838,26 +826,26 @@ func TestEqual(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			a: []Synchronizer{
-				Synchronizer{
+				{
 					ID:         "a",
 					ObjectName: "o1",
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         "b",
 					ObjectName: "o1",
 					State:      ParkingToWaitForState,
 				},
 			},
 			b: []Synchronizer{
-				Synchronizer{
+				{
 					ID:         "a",
 					ObjectName: "o1",
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         "b",
 					ObjectName: "o1",
 					State:      ParkingToWaitForState,
@@ -865,15 +853,15 @@ func TestEqual(t *testing.T) {
 			},
 			result: true,
 		},
-		testCase{
+		{
 			a: []Synchronizer{},
 			b: []Synchronizer{
-				Synchronizer{
+				{
 					ID:         "a",
 					ObjectName: "o1",
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         "b",
 					ObjectName: "o2",
 					State:      ParkingToWaitForState,
@@ -881,14 +869,14 @@ func TestEqual(t *testing.T) {
 			},
 			result: false,
 		},
-		testCase{
+		{
 			a:      []Synchronizer{},
 			b:      []Synchronizer{},
 			result: true,
 		},
-		testCase{
+		{
 			a: []Synchronizer{
-				Synchronizer{
+				{
 					ID:         `x`,
 					ObjectName: `y`,
 					State:      LockedState,
@@ -897,16 +885,16 @@ func TestEqual(t *testing.T) {
 			b:      []Synchronizer{},
 			result: false,
 		},
-		testCase{
+		{
 			a: []Synchronizer{
-				Synchronizer{
+				{
 					ID:         `1`,
 					ObjectName: `2`,
 					State:      ParkingToWaitForState,
 				},
 			},
 			b: []Synchronizer{
-				Synchronizer{
+				{
 					ID:         `2`,
 					ObjectName: `3`,
 					State:      WaitingOnState,
@@ -932,19 +920,19 @@ func TestConvertToSynchronizerState(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			textState: `waiting on`,
 			want:      WaitingOnState,
 		},
-		testCase{
+		{
 			textState: `parking to wait for`,
 			want:      ParkingToWaitForState,
 		},
-		testCase{
+		{
 			textState: `locked`,
 			want:      LockedState,
 		},
-		testCase{
+		{
 			textState: `abc`,
 			want:      LockedState,
 		},
@@ -960,7 +948,7 @@ func TestConvertToSynchronizerState(t *testing.T) {
 }
 
 func TestSynchronizersByThread(t *testing.T) {
-	threads, err := ParseFromFile("threaddumpsamples/13.0.2.0.txt")
+	threadDump, err := ParseFromFile("threaddumpsamples/13.0.2.0.txt")
 	if err != nil {
 		t.Error(err)
 	}
@@ -971,7 +959,7 @@ func TestSynchronizersByThread(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			thread: ThreadInfo{
 				ID:       `0x00007f4948cd6000`,
 				Daemon:   true,
@@ -1048,32 +1036,32 @@ at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 `,
 			},
 			want: []Synchronizer{
-				Synchronizer{
+				{
 					ID:         `0x000000060dc32098`,
 					ObjectName: `java.lang.Class for com.thdump.calls.Call5`,
 					State:      WaitingToLockState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000062bac2040`,
 					ObjectName: `java.lang.Class for com.thdump.calls.Call4`,
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000062babf8a8`,
 					ObjectName: `java.lang.Class for com.thdump.calls.Call3`,
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000062babd110`,
 					ObjectName: `java.lang.Class for com.thdump.calls.Call2`,
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000062baba978`,
 					ObjectName: `java.lang.Class for com.thdump.calls.Call1`,
 					State:      LockedState,
 				},
-				Synchronizer{
+				{
 					ID:         `0x000000060dc11ce0`,
 					ObjectName: `org.apache.tomcat.util.net.NioEndpoint$NioSocketWrapper`,
 					State:      LockedState,
@@ -1082,7 +1070,7 @@ at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 		},
 	}
 
-	synchronizers := SynchronizersByThread(&threads)
+	synchronizers := SynchronizersByThread(&threadDump.Threads)
 
 	for _, tc := range tests {
 		if got, found := synchronizers[tc.thread]; !found {
@@ -1096,6 +1084,14 @@ at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 
 }
 
+func TestSMRSectionInformation(t *testing.T) {
+
+	// TODO:
+	type testCase struct {
+	}
+
+}
+
 func TestSynchronizersByID(t *testing.T) {
 
 	type testCase struct {
@@ -1103,16 +1099,16 @@ func TestSynchronizersByID(t *testing.T) {
 		want []ThreadInfo
 	}
 
-	threads, err := ParseFromFile("threaddumpsamples/13.0.2.0.txt")
+	threadDump, err := ParseFromFile("threaddumpsamples/13.0.2.0.txt")
 	if err != nil {
 		t.Error(err)
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			ID: `0x000000060dc32098`,
 			want: []ThreadInfo{
-				ThreadInfo{
+				{
 					Name:     `scheduling-1`,
 					ID:       `0x00007f494899a800`,
 					NativeID: `0xa36c`,
@@ -1147,7 +1143,7 @@ at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@13.0.2/ThreadPoo
 at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 `,
 				},
-				ThreadInfo{
+				{
 					ID:       `0x00007f4948cd6000`,
 					Daemon:   true,
 					Priority: "5",
@@ -1226,7 +1222,7 @@ at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 		},
 	}
 
-	syncs := SynchronizersByID(&threads)
+	syncs := SynchronizersByID(&threadDump.Threads)
 
 	for _, tc := range tests {
 		got := syncs[tc.ID]
@@ -1255,4 +1251,25 @@ func isIn(thread *ThreadInfo, threads *[]ThreadInfo) bool {
 	}
 
 	return found
+}
+
+func TestVerifySMRInfo(t *testing.T) {
+	type testCase struct {
+		sampleFileName string
+		want           int
+	}
+
+	tests := []testCase{
+		{"threaddumpsamples/15.0.txt", 43},
+	}
+
+	for _, tc := range tests {
+		threadDump, err := ParseFromFile(tc.sampleFileName)
+		if err != nil {
+			t.Error(err)
+		}
+		if len(threadDump.Threads) != tc.want {
+			t.Errorf("got=[%d], want=[%d]", len(threadDump.Threads), tc.want)
+		}
+	}
 }

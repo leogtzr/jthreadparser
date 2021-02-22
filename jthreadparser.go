@@ -47,27 +47,35 @@ func extractThreadState(line string) string {
 	return ""
 }
 
-// ParseFromFile ...
-func ParseFromFile(fileName string) ([]ThreadInfo, error) {
-
-	file, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	threads := make([]ThreadInfo, 0)
-	parse(file, &threads)
-
-	return threads, nil
-}
-
 func hasRunnableState(threadHeaderLine string) bool {
 	rgxp := regexp.MustCompile(runnableStateRgx)
 	return rgxp.MatchString(threadHeaderLine)
 }
 
-func parse(r io.Reader, threads *[]ThreadInfo) {
+func hasSMRInformation(line string) bool {
+	rgxp := regexp.MustCompile(SMRInfoRgx)
+	return rgxp.MatchString(line)
+}
+
+// ParseFromFile ...
+func ParseFromFile(fileName string) (ThreadDump, error) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return ThreadDump{}, err
+	}
+	defer file.Close()
+
+	var threadDump ThreadDump
+
+	threads := make([]ThreadInfo, 0)
+	threadDump.Threads = threads
+
+	parse(file, &threadDump)
+
+	return threadDump, nil
+}
+
+func parse(r io.Reader, threadDump *ThreadDump) {
 
 	scanner := bufio.NewScanner(r)
 	tlines := make([]string, 0)
@@ -79,6 +87,42 @@ func parse(r io.Reader, threads *[]ThreadInfo) {
 
 	for i := 0; i < len(tlines); i++ {
 		line := tlines[i]
+
+		var smrInfo strings.Builder
+
+		if hasSMRInformation(line) {
+			i++
+			if i < len(tlines) {
+				line = tlines[i]
+			} else {
+				break
+			}
+
+			i++
+			if i < len(tlines) {
+				line = tlines[i]
+			} else {
+				break
+			}
+
+			for (len(line) > 0) && !strings.HasPrefix(line, "}") {
+				smrInfo.WriteString(strings.TrimSpace(line))
+				smrInfo.WriteString("\n")
+				i++
+
+				if i < len(tlines) {
+					line = tlines[i]
+				} else {
+					break
+				}
+			}
+
+			if line == "}" {
+				// TODO: ..
+			}
+
+		}
+
 		if hasThreadHeaderInformation(line) {
 			threadInfo := extractThreadInfoFromLine(line)
 			threadInfoTogether := ThreadInfo{}
@@ -145,20 +189,26 @@ func parse(r io.Reader, threads *[]ThreadInfo) {
 			}
 
 			if threadTogether {
-				*threads = append(*threads, threadInfo)
-				*threads = append(*threads, threadInfoTogether)
+				threadDump.Threads = append(threadDump.Threads, threadInfo)
+				threadDump.Threads = append(threadDump.Threads, threadInfoTogether)
 			} else {
-				*threads = append(*threads, threadInfo)
+				threadDump.Threads = append(threadDump.Threads, threadInfo)
 			}
 		}
 	}
+
 }
 
 // ParseFrom ...
-func ParseFrom(r io.Reader) []ThreadInfo {
+func ParseFrom(r io.Reader) ThreadDump {
+	var threadDump ThreadDump
+
 	threads := make([]ThreadInfo, 0)
-	parse(r, &threads)
-	return threads
+	threadDump.Threads = threads
+
+	parse(r, &threadDump)
+
+	return threadDump
 }
 
 func uniqueStackTrace(threadStackTrace []string) []string {

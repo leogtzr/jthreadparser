@@ -19,3 +19,14 @@ type Synchronizer struct {
 	ID, ObjectName string
 	State          SynchronizerState
 }
+
+// SMR section, holds a list of all the non-JVM thread IDs.
+type SMR struct {
+	IDs []string
+}
+
+// ThreadDump ...
+type ThreadDump struct {
+	Threads []ThreadInfo
+	SMR     []SMR
+}

@@ -12,9 +12,9 @@ import (
 */
 func main() {
 
-	threads := jthreadparser.ParseFrom(os.Stdin)
+	threadDump := jthreadparser.ParseFrom(os.Stdin)
 
-	for _, th := range threads {
+	for _, th := range threadDump.Threads {
 		fmt.Println(th)
 	}
 

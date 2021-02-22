@@ -9,13 +9,12 @@ import (
 )
 
 func main() {
-	threads, err := jthreadparser.ParseFromFile(os.Args[1])
-
+	threadDump, err := jthreadparser.ParseFromFile(os.Args[1])
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, th := range threads {
+	for _, th := range threadDump.Threads {
 		fmt.Println(th.Name)
 		fmt.Println(th.Priority)
 		fmt.Println(th.NativeID)

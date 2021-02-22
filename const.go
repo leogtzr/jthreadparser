@@ -12,12 +12,14 @@ const (
 )
 
 const (
-	threadInformationBegins     = "\""
-	threadHeaderInfoRgx         = `^\"(.*).*tid=(\w*) nid=(\w*)\s\w*`
-	threadNameRgx               = `^"(.*)".*\stid=(\w*) nid=(\w*)\s\w*`
-	threadNameWithPriorityRgx   = `^"(.*)".*\sprio=(\d+).*\stid=(\w*) nid=(\w*)\s\w*`
-	stateRgx                    = `\s*java.lang.Thread.State: (.*)`
-	runnableStateRgx            = `runnable\s{1,2}$`
+	threadInformationBegins   = "\""
+	threadHeaderInfoRgx       = `^\"(.*).*tid=(\w*) nid=(\w*)\s\w*`
+	threadNameRgx             = `^"(.*)".*\stid=(\w*) nid=(\w*)\s\w*`
+	threadNameWithPriorityRgx = `^"(.*)".*\sprio=(\d+).*\stid=(\w*) nid=(\w*)\s\w*`
+	stateRgx                  = `\s*java.lang.Thread.State: (.*)`
+	runnableStateRgx          = `runnable\s{1,2}$`
+	// SMRInfoRgx ...
+	SMRInfoRgx                  = `^Threads class SMR info:$`
 	waitingOnStateRgx           = `waiting on condition\s{1,2}$`
 	synchronizerRgx             = `\s*\- (waiting on|parking to wait for|locked|waiting to lock)\s*<(.*)>\s*\(a\s(.*)\)`
 	stackTraceRgx               = `^\s+(at|\-\s).*\)$`
