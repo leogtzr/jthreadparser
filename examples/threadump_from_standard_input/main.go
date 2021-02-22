@@ -12,10 +12,7 @@ import (
 */
 func main() {
 
-	threads, err := jthreadparser.ParseFrom(os.Stdin)
-	if err != nil {
-		panic(err)
-	}
+	threads := jthreadparser.ParseFrom(os.Stdin)
 
 	for _, th := range threads {
 		fmt.Println(th)
