@@ -8,8 +8,7 @@ import (
 )
 
 const (
-	threadInfo      = `"Attach Listener" daemon prio=10 tid=0x00002aaab74c5000 nid=0x2ea5 waiting on condition [0x0000000000000000]`
-	threadStateLine = `   java.lang.Thread.State: TIMED_WAITING (parking)`
+	threadInfo = `"Attach Listener" daemon prio=10 tid=0x00002aaab74c5000 nid=0x2ea5 waiting on condition [0x0000000000000000]`
 
 	threadInformation = `"HDScanner" prio=10 tid=0x00002aaaebf6e800 nid=0x4367 runnable [0x00000000451cf000]
    java.lang.Thread.State: RUNNABLE
@@ -104,7 +103,7 @@ func TestThreadInfo(t *testing.T) {
 	}
 
 	tests := []testCase{
-		testCase{
+		{
 			threadInfoHeadLine: `"http-nio-8080-BlockPoller" #18 daemon prio=5 os_prio=0 cpu=13.17ms elapsed=116.26s tid=0x00007f4948f82000 nid=0xa35f runnable  [0x00007f48a7dfe000]`,
 			want: ThreadInfo{
 				Daemon:   true,
@@ -114,7 +113,7 @@ func TestThreadInfo(t *testing.T) {
 				ID:       "0x00007f4948f82000",
 			},
 		},
-		testCase{
+		{
 			threadInfoHeadLine: `"GC Thread#6" os_prio=0 cpu=12.53ms elapsed=106.94s tid=0x00007f1914009000 nid=0xb090 runnable`,
 			want: ThreadInfo{
 				Daemon:   false,
@@ -124,7 +123,7 @@ func TestThreadInfo(t *testing.T) {
 				ID:       `0x00007f1914009000`,
 			},
 		},
-		testCase{
+		{
 			threadInfoHeadLine: `"GC Thread#0" os_prio=0 cpu=25.37ms elapsed=107.25s tid=0x00007f195c06a800 nid=0xb079 runnable`,
 			want: ThreadInfo{
 				Daemon:   false,
@@ -134,7 +133,7 @@ func TestThreadInfo(t *testing.T) {
 				ID:       `0x00007f195c06a800`,
 			},
 		},
-		testCase{
+		{
 			threadInfoHeadLine: `"scheduling-1" #31 prio=5 os_prio=0 cpu=23.59ms elapsed=116.23s tid=0x00007f494899a800 nid=0xa36c waiting on condition  [0x00007f48a70f0000]`,
 			want: ThreadInfo{
 				Daemon:   false,
@@ -151,18 +150,23 @@ func TestThreadInfo(t *testing.T) {
 		if got.ID != tc.want.ID {
 			t.Errorf("got=[%s], want=[%s]", got.ID, tc.want.ID)
 		}
+
 		if got.Daemon != tc.want.Daemon {
 			t.Errorf("got=[%t], want=[%t]", got.Daemon, tc.want.Daemon)
 		}
+
 		if got.Name != tc.want.Name {
 			t.Errorf("got=[%s], want=[%s]", got.Name, tc.want.Name)
 		}
+
 		if got.NativeID != tc.want.NativeID {
 			t.Errorf("got=[%s], want=[%s]", got.NativeID, tc.want.NativeID)
 		}
+
 		if got.Priority != tc.want.Priority {
 			t.Errorf("got=[%s], want=[%s]", got.Priority, tc.want.Priority)
 		}
+
 		if got.ID != tc.want.ID {
 			t.Errorf("got=[%s], want=[%s]", got.ID, tc.want.ID)
 		}
@@ -170,6 +174,7 @@ func TestThreadInfo(t *testing.T) {
 }
 
 func TestExtractThreadState(t *testing.T) {
+	t.Parallel()
 
 	type testCase struct {
 		threadStateLine, want string
@@ -195,16 +200,20 @@ func TestExtractThreadState(t *testing.T) {
 }
 
 func TestShouldIdentifyDaemonThread(t *testing.T) {
+	t.Parallel()
+
 	threadDump := ParseFrom(strings.NewReader(daemonThreadInformation))
 	if len(threadDump.Threads) != 1 {
 		t.Error("Error parsing single daemon thread dump")
 	}
+
 	if !threadDump.Threads[0].Daemon {
 		t.Error("Thread should be daemon")
 	}
 }
 
 func TestShouldTagCorrectlyDaemonThread(t *testing.T) {
+	t.Parallel()
 
 	type testCase struct {
 		threadInfo ThreadInfo
@@ -231,19 +240,21 @@ func TestShouldTagCorrectlyDaemonThread(t *testing.T) {
 }
 
 func TestParseFromFile(t *testing.T) {
+	t.Parallel()
+
 	file, err := ioutil.TempFile("", "xxxx.")
 	if err != nil {
 		t.Error(err)
 	}
 	defer os.Remove(file.Name())
 
-	err = ioutil.WriteFile(file.Name(), []byte(threadDumpSample), 0644)
+	err = ioutil.WriteFile(file.Name(), []byte(threadDumpSample), 0600)
 	if err != nil {
 		t.Error(err)
 	}
 
 	expectedNumberOfThreadsInSample := 3
-	threadDump, err := ParseFromFile(file.Name())
+	threadDump, _ := ParseFromFile(file.Name())
 
 	if len(threadDump.Threads) != expectedNumberOfThreadsInSample {
 		t.Errorf("got=[%d], expected=[%d]", len(threadDump.Threads), expectedNumberOfThreadsInSample)
@@ -256,6 +267,7 @@ func TestParseFromFile(t *testing.T) {
 }
 
 func TestTopMethodsInThreads(t *testing.T) {
+	t.Parallel()
 
 	type testCase struct {
 		javaMethodName string
@@ -284,7 +296,6 @@ func TestTopMethodsInThreads(t *testing.T) {
 }
 
 func TestIdenticalStrackTrace(t *testing.T) {
-
 	type testCase struct {
 		stacktrace string
 		want       int
@@ -319,6 +330,8 @@ at java.lang.Thread.run(Thread.java:682)`,
 }
 
 func TestVerifyNumberOfThreadsInSamples(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
 		sampleFileName string
 		want           int
@@ -371,6 +384,7 @@ func TestVerifyNumberOfThreadsInSamples(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+
 		if len(threadDump.Threads) != tc.want {
 			t.Errorf("got=[%d], want=[%d]", len(threadDump.Threads), tc.want)
 		}
@@ -378,6 +392,7 @@ func TestVerifyNumberOfThreadsInSamples(t *testing.T) {
 }
 
 func TestNoThreadDumpFile(t *testing.T) {
+	t.Parallel()
 
 	type testCase struct {
 		sampleFileName string
@@ -402,6 +417,7 @@ func TestNoThreadDumpFile(t *testing.T) {
 }
 
 func TestHasRunnableState(t *testing.T) {
+	t.Parallel()
 
 	type testCase struct {
 		threadHeaderLine string
@@ -811,6 +827,7 @@ func TestExtractSynchronizers(t *testing.T) {
 		if len(tc.want) != len(got) {
 			t.Errorf("expected=[%d] synchronizers, got=[%d]", len(tc.want), len(got))
 		}
+
 		if !equalSyncs(got, tc.want) {
 			t.Errorf("got=[%q], want=[%q]", got, tc.want)
 		}
@@ -1075,10 +1092,8 @@ at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 	for _, tc := range tests {
 		if got, found := synchronizers[tc.thread]; !found {
 			t.Errorf("thread -> '%q' wasn't found", got)
-		} else {
-			if !equalSyncs(got, tc.want) {
-				t.Errorf("got=[%s], want=[%s]", got, tc.want)
-			}
+		} else if !equalSyncs(got, tc.want) {
+			t.Errorf("got=[%s], want=[%s]", got, tc.want)
 		}
 	}
 }

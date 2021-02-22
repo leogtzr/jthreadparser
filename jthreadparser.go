@@ -13,13 +13,15 @@ func (th ThreadInfo) String() string {
 	if th.Daemon {
 		return fmt.Sprintf("Thread Name: '%s' (daemon), ID: '%s', State: '%s'", th.Name, th.ID, th.State)
 	}
+
 	return fmt.Sprintf("Thread Name: '%s', ID: '%s', State: '%s'", th.Name, th.ID, th.State)
 }
 
 func extractThreadInfoFromLine(line string) ThreadInfo {
-	ti := ThreadInfo{}
+	ti := ThreadInfo{
+		Daemon: strings.Contains(line, " daemon "),
+	}
 
-	ti.Daemon = strings.Contains(line, " daemon ")
 	if strings.Contains(line, " prio=") {
 		if rgxp, _ := regexp.Compile(threadNameWithPriorityRgx); rgxp.MatchString(line) {
 			for _, v := range rgxp.FindAllStringSubmatch(line, -1) {
@@ -160,6 +162,7 @@ func parse(r io.Reader, threadDump *ThreadDump) {
 			// Look for the thread state:
 			if threadState := extractThreadState(line); len(threadState) != 0 {
 				threadInfo.State = threadState
+
 				if i < len(tlines) {
 					line = tlines[i]
 					i++
@@ -237,6 +240,7 @@ func uniqueStackTrace(threadStackTrace []string) []string {
 	for _, val := range threadStackTrace {
 		if _, ok := m[val]; !ok {
 			m[val] = true
+
 			u = append(u, val)
 		}
 	}
@@ -267,11 +271,7 @@ func MostUsedMethods(threads *[]ThreadInfo) map[string]int {
 				continue
 			}
 
-			if _, ok := mostUsedMethodsGeneral[stackTraceLine]; ok {
-				mostUsedMethodsGeneral[stackTraceLine]++
-			} else {
-				mostUsedMethodsGeneral[stackTraceLine] = 1
-			}
+			mostUsedMethodsGeneral[stackTraceLine]++
 		}
 	}
 
@@ -284,11 +284,7 @@ func IdenticalStackTrace(threads *[]ThreadInfo) map[string]int {
 
 	for _, th := range *threads {
 		thStack := strings.TrimSpace(th.StackTrace)
-		if _, ok := indenticalStackTrace[thStack]; ok {
-			indenticalStackTrace[thStack]++
-		} else {
-			indenticalStackTrace[thStack] = 1
-		}
+		indenticalStackTrace[thStack]++
 	}
 
 	return indenticalStackTrace
@@ -326,32 +322,21 @@ func extractSynchronizers(stacktrace string) []Synchronizer {
 	return syncs
 }
 
-func equalThreads(a, b []ThreadInfo) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func equalSyncs(a, b []Synchronizer) bool {
 	if len(a) != len(b) {
 		return false
 	}
+
 	for i, v := range a {
 		if v != b[i] {
 			return false
 		}
 	}
+
 	return true
 }
 
 func convertToSyncState(textState string) SynchronizerState {
-
 	if strings.Contains(textState, "waiting on") {
 		return WaitingOnState
 	} else if strings.Contains(textState, "locked") {
