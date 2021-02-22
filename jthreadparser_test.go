@@ -1084,14 +1084,6 @@ at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 
 }
 
-func TestSMRSectionInformation(t *testing.T) {
-
-	// TODO:
-	type testCase struct {
-	}
-
-}
-
 func TestSynchronizersByID(t *testing.T) {
 
 	type testCase struct {
@@ -1255,12 +1247,12 @@ func isIn(thread *ThreadInfo, threads *[]ThreadInfo) bool {
 
 func TestVerifySMRInfo(t *testing.T) {
 	type testCase struct {
-		sampleFileName string
-		want           int
+		sampleFileName        string
+		wantNonJVMThreadCount int
 	}
 
 	tests := []testCase{
-		{"threaddumpsamples/15.0.txt", 43},
+		{"threaddumpsamples/15.0.txt", 28},
 	}
 
 	for _, tc := range tests {
@@ -1268,8 +1260,8 @@ func TestVerifySMRInfo(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if len(threadDump.Threads) != tc.want {
-			t.Errorf("got=[%d], want=[%d]", len(threadDump.Threads), tc.want)
+		if len(threadDump.SMR) != tc.wantNonJVMThreadCount {
+			t.Errorf("got=[%d], want=[%d]", len(threadDump.SMR), tc.wantNonJVMThreadCount)
 		}
 	}
 }

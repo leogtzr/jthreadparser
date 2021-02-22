@@ -68,6 +68,7 @@ func ParseFromFile(fileName string) (ThreadDump, error) {
 	var threadDump ThreadDump
 
 	threads := make([]ThreadInfo, 0)
+
 	threadDump.Threads = threads
 
 	parse(file, &threadDump)
@@ -75,8 +76,21 @@ func ParseFromFile(fileName string) (ThreadDump, error) {
 	return threadDump, nil
 }
 
-func parse(r io.Reader, threadDump *ThreadDump) {
+func parseSMRIDs(smrInfo string, threadDump *ThreadDump) {
+	if len(smrInfo) > 0 {
+		for _, smrInfoLine := range strings.Split(smrInfo, "\n") {
+			ids := strings.Split(smrInfoLine, ",")
+			for _, id := range ids {
+				id := strings.TrimSpace(id)
+				if len(id) > 0 {
+					threadDump.SMR = append(threadDump.SMR, strings.TrimSpace(id))
+				}
+			}
+		}
+	}
+}
 
+func parse(r io.Reader, threadDump *ThreadDump) {
 	scanner := bufio.NewScanner(r)
 	tlines := make([]string, 0)
 
@@ -118,7 +132,7 @@ func parse(r io.Reader, threadDump *ThreadDump) {
 			}
 
 			if line == "}" {
-				// TODO: ..
+				parseSMRIDs(smrInfo.String(), threadDump)
 			}
 
 		}
@@ -196,7 +210,6 @@ func parse(r io.Reader, threadDump *ThreadDump) {
 			}
 		}
 	}
-
 }
 
 // ParseFrom ...
