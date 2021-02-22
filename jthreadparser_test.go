@@ -1081,7 +1081,6 @@ at java.lang.Thread.run(java.base@13.0.2/Thread.java:830)
 			}
 		}
 	}
-
 }
 
 func TestSynchronizersByID(t *testing.T) {
@@ -1238,6 +1237,7 @@ func isIn(thread *ThreadInfo, threads *[]ThreadInfo) bool {
 	for _, th := range *threads {
 		if th == *thread {
 			found = true
+
 			break
 		}
 	}

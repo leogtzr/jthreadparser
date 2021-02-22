@@ -34,6 +34,7 @@ func extractThreadInfoFromLine(line string) ThreadInfo {
 			}
 		}
 	}
+
 	return ti
 }
 
@@ -41,19 +42,23 @@ func extractThreadState(line string) string {
 	if rgxp, _ := regexp.Compile(stateRgx); rgxp.MatchString(line) {
 		if st := strings.Split(line, ":"); st != nil {
 			state := strings.TrimSpace(st[1])
+
 			return strings.Split(state, " ")[0]
 		}
 	}
+
 	return ""
 }
 
 func hasRunnableState(threadHeaderLine string) bool {
 	rgxp := regexp.MustCompile(runnableStateRgx)
+
 	return rgxp.MatchString(threadHeaderLine)
 }
 
 func hasSMRInformation(line string) bool {
 	rgxp := regexp.MustCompile(SMRInfoRgx)
+
 	return rgxp.MatchString(line)
 }
 
@@ -134,7 +139,6 @@ func parse(r io.Reader, threadDump *ThreadDump) {
 			if line == "}" {
 				parseSMRIDs(smrInfo.String(), threadDump)
 			}
-
 		}
 
 		if hasThreadHeaderInformation(line) {
@@ -169,6 +173,7 @@ func parse(r io.Reader, threadDump *ThreadDump) {
 				line2 := line
 				threadInfoTogether = extractThreadInfoFromLine(line2)
 				threadTogether = true
+
 				if hasRunnableState(line2) {
 					threadInfoTogether.State = "runnable"
 				} else if hasWaitingOnState(line2) {
@@ -185,6 +190,7 @@ func parse(r io.Reader, threadDump *ThreadDump) {
 			}
 
 			var sb strings.Builder
+
 			for (len(line) > 0) && !strings.HasPrefix(line, threadInformationBegins) {
 				sb.WriteString(strings.TrimSpace(line))
 				sb.WriteString("\n")
@@ -241,14 +247,15 @@ func uniqueStackTrace(threadStackTrace []string) []string {
 func extractJavaMethodNameFromStackTraceLine(stacktraceLine string, rgx *regexp.Regexp) string {
 	if rgx.MatchString(stacktraceLine) {
 		fields := strings.Fields(strings.TrimSpace(stacktraceLine))
+
 		return strings.Join(fields[1:], " ")
 	}
+
 	return ""
 }
 
 // MostUsedMethods ...
 func MostUsedMethods(threads *[]ThreadInfo) map[string]int {
-
 	rgx := regexp.MustCompile(stackTraceRgxMethodName)
 
 	mostUsedMethodsGeneral := make(map[string]int)
@@ -259,13 +266,13 @@ func MostUsedMethods(threads *[]ThreadInfo) map[string]int {
 			if stackTraceLine == "" {
 				continue
 			}
+
 			if _, ok := mostUsedMethodsGeneral[stackTraceLine]; ok {
 				mostUsedMethodsGeneral[stackTraceLine]++
 			} else {
 				mostUsedMethodsGeneral[stackTraceLine] = 1
 			}
 		}
-
 	}
 
 	return mostUsedMethodsGeneral
@@ -274,6 +281,7 @@ func MostUsedMethods(threads *[]ThreadInfo) map[string]int {
 // IdenticalStackTrace ...
 func IdenticalStackTrace(threads *[]ThreadInfo) map[string]int {
 	indenticalStackTrace := make(map[string]int)
+
 	for _, th := range *threads {
 		thStack := strings.TrimSpace(th.StackTrace)
 		if _, ok := indenticalStackTrace[thStack]; ok {
@@ -282,16 +290,19 @@ func IdenticalStackTrace(threads *[]ThreadInfo) map[string]int {
 			indenticalStackTrace[thStack] = 1
 		}
 	}
+
 	return indenticalStackTrace
 }
 
 func hasWaitingOnState(threadHeaderLine string) bool {
 	rgxp := regexp.MustCompile(waitingOnStateRgx)
+
 	return rgxp.MatchString(threadHeaderLine)
 }
 
 func hasThreadHeaderInformation(threadHeaderLine string) bool {
 	rgxp := regexp.MustCompile(threadHeaderInfoRgx)
+
 	return rgxp.MatchString(threadHeaderLine)
 }
 
@@ -307,6 +318,7 @@ func extractSynchronizers(stacktrace string) []Synchronizer {
 				sync.ID = group[2]
 				sync.ObjectName = group[3]
 			}
+
 			syncs = append(syncs, sync)
 		}
 	}
