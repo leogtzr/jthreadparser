@@ -16,3 +16,7 @@ check:
 cover:
 	go test -coverprofile cp.out
 	go tool cover -html=cp.out
+
+lint:
+	golangci-lint run --enable-all
+
