@@ -1,6 +1,10 @@
 [![build](https://github.com/leogtzr/jthreadparser/actions/workflows/build.yml/badge.svg)](https://github.com/leogtzr/jthreadparser/actions/workflows/build.yml)
 [![tests](https://github.com/leogtzr/jthreadparser/actions/workflows/tests.yml/badge.svg)](https://github.com/leogtzr/jthreadparser/actions/workflows/tests.yml)
 
+# jthreadparser
+
+**jthreadparser** is a Go library to parse Java Thread Dump files.
+
 # General usage
 
 ```go
