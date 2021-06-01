@@ -1,3 +1,6 @@
+[![build](https://github.com/leogtzr/jthreadparser/actions/workflows/build.yml/badge.svg)](https://github.com/leogtzr/jthreadparser/actions/workflows/build.yml)
+[![tests](https://github.com/leogtzr/jthreadparser/actions/workflows/tests.yml/badge.svg)](https://github.com/leogtzr/jthreadparser/actions/workflows/tests.yml)
+
 # General usage
 
 ```go
